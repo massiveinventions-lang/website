@@ -37,8 +37,7 @@ services:
     buildCommand: |
       npm install --no-audit --no-fund &&
       chmod +x scripts/deploy-prod.sh &&
-      ./scripts/deploy-prod.sh &&
-      npm run build
+      ./scripts/deploy-prod.sh
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
