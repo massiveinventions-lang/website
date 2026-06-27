@@ -1,0 +1,52 @@
+# Massive Inventions — Backend (Express + Prisma)
+#
+# One-click deploy to Render. Push this repo to GitHub, then on Render:
+#   New → Blueprint → pick this repo → it reads this file → done.
+#
+# The deploy script swaps the Prisma schema from SQLite (local) to Postgres
+# (production) before pushing the schema to the database. Then `npm start`
+# launches the Node server.
+#
+# Required environment variables (set these in the Render dashboard):
+#   DATABASE_URL              — Supabase Postgres pooler connection string
+#   JWT_SECRET                — long random string (openssl rand -base64 48)
+#   CLIENT_ORIGIN             — comma-separated allowed origins, e.g.
+#                               https://massiveinventions.in,https://admin.massiveinventions.in
+#   NODE_ENV                  — production
+#   PORT                      — 4000 (Render sets this automatically)
+#   MOCK_INTEGRATIONS         — false (once you have Razorpay/Shiprocket keys)
+#   RAZORPAY_KEY_ID           — rzp_live_xxx or rzp_test_xxx
+#   RAZORPAY_KEY_SECRET       — your key secret
+#   RAZORPAY_WEBHOOK_SECRET   — webhook signing secret
+#   SHIPROCKET_EMAIL          — your Shiprocket login
+#   SHIPROCKET_PASSWORD       — your Shiprocket password
+#   SHIPROCKET_PICKUP_LOCATION — pickup location name (must match Shiprocket)
+#   WEB3FORMS_ACCESS_KEY      — from web3forms.com
+#   WEB3FORMS_TO              — destination email (default: massiveinventions@gmail.com)
+#   ADMIN_EMAILS              — comma-separated admin allowlist
+#   ADMIN_PASSWORD            — strong admin password
+
+services:
+  - type: web
+    name: massive-inventions-api2
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    rootDir: server
+    buildCommand: |
+      npm install --no-audit --no-fund &&
+      chmod +x scripts/deploy-prod.sh &&
+      ./scripts/deploy-prod.sh &&
+      npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MOCK_INTEGRATIONS
+        value: "false"
+      # DATABASE_URL, JWT_SECRET, CLIENT_ORIGIN, ADMIN_EMAILS, ADMIN_PASSWORD,
+      # RAZORPAY_*, SHIPROCKET_*, WEB3FORMS_* — set these in the Render UI
+      # before the first deploy so they're available when buildCommand runs.

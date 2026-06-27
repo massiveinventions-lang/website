@@ -1,0 +1,43 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main # This triggers the deployment when you push to the 'main' branch
+
+jobs:
+  web-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 📦 Install Dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: 🔨 Build Project
+        env:
+          # We pass GitHub Secrets into the build process so they are baked into the files
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_WEB3FORMS_KEY: ${{ secrets.VITE_WEB3FORMS_KEY }}
+          VITE_RAZORPAY_KEY_ID: ${{ secrets.VITE_RAZORPAY_KEY_ID }}
+        run: npm run build
+
+      - name: 📂 Sync files to Hostinger via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/ # Only upload the built files
+          server-dir: ./public_html/ # Hostinger's public folder
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**

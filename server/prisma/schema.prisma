@@ -1,0 +1,128 @@
+// Prisma schema for the Massive Inventions backend.
+//
+// Local dev (this file): SQLite (provider = "sqlite", DATABASE_URL = file:./dev.db).
+//   Zero setup, no Docker, no admin. The default for local development.
+//
+// Production: switch to `schema.production.prisma` for Postgres. To deploy:
+//   cp prisma/schema.production.prisma prisma/schema.prisma
+//   DATABASE_URL=postgresql://... npx prisma db push
+//   cp prisma/schema.sqlite.prisma prisma/schema.prisma  (after deploy, to switch back)
+//
+// Why two files? Prisma doesn't support runtime-switchable providers, and we
+// want local dev to keep working with zero setup while production uses
+// Supabase Postgres (the only viable option on Vercel/Render — no SQLite
+// support on serverless / ephemeral filesystems).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id
+  email     String   @unique
+  name      String?
+  role      String   @default("customer")
+  addresses String   @default("[]") // JSON array
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([email])
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  name            String
+  price           Int
+  originalPrice   Int?
+  rating          Float    @default(0)
+  reviews         Int      @default(0)
+  category        String
+  badge           String?
+  image           String // JSON { src, position }
+  hoverImage      String?
+  images          String? // JSON array
+  description     String
+  longDescription String?
+  inStock         Boolean  @default(true)
+  stock           Int      @default(100)
+  specs           String   @default("[]")
+  features        String   @default("[]")
+  colors          String   @default("[]")
+  sku             String?  @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([name])
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  userId          String?
+  customerEmail   String?
+  items           String // JSON
+  subtotal        Int
+  shipping        Int      @default(0)
+  total           Int
+  shippingAddress String // JSON
+  status          String   @default("pending")
+  payment         String   @default("{}")
+  shippingInfo    String   @default("{}") @map("shipping_")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("homepage")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("newsletter_subscribers")
+}
+
+model LoginOtp {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String   @map("code_hash")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email])
+  @@index([expiresAt])
+  @@map("login_otps")
+}
+
+model ReplacementRequest {
+  id              String   @id @default(cuid())
+  name            String
+  email           String
+  phone           String?
+  orderId         String?  @map("order_id")
+  productName     String?  @map("product_name")
+  reason          String   // "replacement" | "other"
+  message         String
+  status          String   @default("pending") // pending | approved | declined | resolved
+  adminNotes      String?  @map("admin_notes")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt          @map("updated_at")
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+  @@map("replacement_requests")
+}

@@ -1,0 +1,5 @@
+# Netlify-style SPA fallback — works on Netlify, Cloudflare Pages,
+# Render static sites, and other hosts that read _redirects.
+# Hostinger (Apache) uses the .htaccess file instead.
+
+/*    /index.html   200

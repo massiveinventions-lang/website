@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Massive Inventions"
+version = "1.0.0"
+id = "artifacts/massive-inventions"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18214
+
+[services.development]
+run = "pnpm --filter @workspace/massive-inventions run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/massive-inventions", "run", "build" ]
+publicDir = "artifacts/massive-inventions/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18214"
+BASE_PATH = "/"

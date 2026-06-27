@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"main.tsx: %{http_code}\\\\n\" \"http://localhost:5173/src/main.tsx\")",
+      "Bash(curl -s -o /dev/null -w \"App.tsx: %{http_code}\\\\n\" \"http://localhost:5173/src/App.tsx\")",
+      "Bash(curl -s -o /dev/null -w \"index.css: %{http_code}\\\\n\" \"http://localhost:5173/src/index.css\")",
+      "Bash(ls \"C:/Users/Jai Kumar/AppData/Local/Temp/\" 2>/dev/null | grep -iE \"\\(logo|massive|chatgpt|claude|attachment|image|upload\\)\" | head -20)",
+      "Read(//c/Users/Jai Kumar/AppData/Local/Temp/**)",
+      "Read(//c/Users/Jai Kumar/.claude/**)",
+      "Read(//c/Users/Jai Kumar/**)",
+      "Bash(curl -s -o /dev/null -w \"logo.png: HTTP %{http_code} \\(%{size_download} bytes\\)\\\\n\" http://localhost:5173/logo.png)",
+      "Bash(curl -s -o /dev/null -w \"typecheck-style: HTTP %{http_code}\\\\n\" http://localhost:5173/src/data/products.ts)",
+      "Bash(node ./node_modules/typescript/bin/tsc -p tsconfig.json --noEmit)",
+      "Bash(curl -s -o /dev/null -w \"homepage: HTTP %{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"App.tsx: HTTP %{http_code}\\\\n\" http://localhost:5173/src/App.tsx)",
+      "Bash(curl -s -o /dev/null -w \"Navbar.tsx: HTTP %{http_code}\\\\n\" http://localhost:5173/src/components/Navbar.tsx)",
+      "Bash(curl -s -o /dev/null -w \"useScrollToSection.ts: HTTP %{http_code}\\\\n\" http://localhost:5173/src/hooks/useScrollToSection.ts)",
+      "Bash(pnpm dev *)",
+      "Bash(netstat -ano)",
+      "Bash(PORT=3000 pnpm dev)",
+      "Bash(npm install *)",
+      "Bash(curl -sS http://localhost:4000/api/health)",
+      "Bash(curl -sS -i http://localhost:4000/api/products)",
+      "Bash(curl -sS http://localhost:4000/api/products)",
+      "Bash(curl -sS -i http://localhost:4000/api/orders/mine)",
+      "Bash(curl -sS http://localhost:4000/api/orders/mine)",
+      "Bash(curl -sS -i http://localhost:4000/api/orders/mine -H \"X-Dev-Email: admin@example.com\")",
+      "Bash(curl -sS http://localhost:4000/api/orders/mine -H \"X-Dev-Email: admin@example.com\")",
+      "Bash(curl -sS http://localhost:4000/api/admin/stats -H \"X-Dev-Email: admin@example.com\")",
+      "Bash(curl -sS -X POST http://localhost:4000/api/orders/webhook/razorpay -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(curl -sS http://localhost:4000/api/nope)",
+      "Bash(curl -sS -i -X POST http://localhost:4000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"nonexistent@example.com\",\"password\":\"wrong\"}')",
+      "Bash(npm run *)"
+    ]
+  }
+}

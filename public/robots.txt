@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /checkout
+Disallow: /cart
+Disallow: /admin
+
+Sitemap: https://massiveinvention.in/sitemap.xml
+Sitemap: https://admin.massiveinvention.in/sitemap.xml
