@@ -28,7 +28,7 @@
 
 services:
   - type: web
-    name: massive-inventions-api2
+    name: massive-inventions-api3
     runtime: node
     plan: starter
     region: oregon
