@@ -136,8 +136,13 @@ async function loadOrCreateUser(
 
 function makeStubUser(email: string): User {
   const isAdmin = config.adminEmails.includes(email.toLowerCase());
+  const userId = crypto
+    .createHash("sha256")
+    .update(`user:${email}`)
+    .digest("hex")
+    .slice(0, 36);
   return {
-    id: "00000000-0000-0000-0000-000000000001",
+    id: userId,
     email,
     name: email.split("@")[0],
     role: isAdmin ? "admin" : "customer",
@@ -178,16 +183,16 @@ export const requireAuth: RequestHandler = async (
     }
     // In mock mode: ensure the User row exists so Order.userId works.
     if (config.useMocks) {
-      const stubId = "00000000-0000-0000-0000-000000000001";
+      const stub = makeStubUser(sessionToken.email);
       try {
         await prisma.user.upsert({
-          where: { id: stubId },
-          update: { email: sessionToken.email, role: "customer" },
+          where: { id: stub.id },
+          update: { email: sessionToken.email, role: stub.role },
           create: {
-            id: stubId,
+            id: stub.id,
             email: sessionToken.email,
             name: sessionToken.email.split("@")[0],
-            role: "customer",
+            role: stub.role,
             addresses: "[]",
           },
         });
@@ -223,17 +228,16 @@ export const requireAuth: RequestHandler = async (
   // Order.userId foreign key is satisfied.
   if (config.useMocks) {
     const email = bearer.includes("@") ? bearer : `${bearer}@example.com`;
-    const isAdmin = config.adminEmails.includes(email.toLowerCase());
-    const stubId = "00000000-0000-0000-0000-000000000001";
+    const stub = makeStubUser(email);
     try {
       await prisma.user.upsert({
-        where: { id: stubId },
-        update: { email, role: isAdmin ? "admin" : "customer" },
+        where: { id: stub.id },
+        update: { email, role: stub.role },
         create: {
-          id: stubId,
+          id: stub.id,
           email,
           name: email.split("@")[0],
-          role: isAdmin ? "admin" : "customer",
+          role: stub.role,
           addresses: "[]",
         },
       });
