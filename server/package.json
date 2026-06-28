@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "node scripts/build.mjs",
+    "build": "npx prisma generate",
     "start": "tsx src/index.ts",
     "seed": "tsx prisma/seed.ts",
     "smoke": "tsx src/scripts/smoke.ts",

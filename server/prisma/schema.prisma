@@ -1,24 +1,28 @@
-// Prisma schema for the Massive Inventions backend.
+// Prisma schema for the Massive Inventions backend — PRODUCTION.
 //
-// Local dev (this file): SQLite (provider = "sqlite", DATABASE_URL = file:./dev.db).
-//   Zero setup, no Docker, no admin. The default for local development.
+// This is the schema variant for production deploys (Render/Railway/etc.)
+// that point at Supabase Postgres. The local dev schema is `schema.prisma`
+// (SQLite, zero setup). The two are identical except for the datasource
+// provider and url.
 //
-// Production: switch to `schema.production.prisma` for Postgres. To deploy:
-//   cp prisma/schema.production.prisma prisma/schema.prisma
-//   DATABASE_URL=postgresql://... npx prisma db push
-//   cp prisma/schema.sqlite.prisma prisma/schema.prisma  (after deploy, to switch back)
+// To deploy:
+//   1. cp prisma/schema.production.prisma prisma/schema.prisma
+//   2. export DATABASE_URL="postgresql://user:pass@host:5432/db?sslmode=require"
+//   3. npx prisma generate
+//   4. npx prisma db push
+//   5. Start the server (it'll pick up the new schema automatically via DATABASE_URL)
 //
-// Why two files? Prisma doesn't support runtime-switchable providers, and we
-// want local dev to keep working with zero setup while production uses
-// Supabase Postgres (the only viable option on Vercel/Render — no SQLite
-// support on serverless / ephemeral filesystems).
+// Then in CI / deploy, you can either keep using this swapped schema or
+// swap back to SQLite once dev work resumes:
+//
+//   cp prisma/schema.sqlite.prisma prisma/schema.prisma  (local dev only)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
