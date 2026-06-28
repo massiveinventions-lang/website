@@ -172,31 +172,36 @@ export const requireAuth: RequestHandler = async (
   // sub="session", email=<user>, sid=<loginOtp id>.
   const sessionToken = verifyJwt(bearer);
   if (sessionToken?.sub === "session" && sessionToken.email) {
-    const stub = makeStubUser(sessionToken.email);
-    // Always ensure the User row exists — needed for Order.userId FK in both
-    // mock and production modes. The OTP verify-otp route also does this, but
-    // we repeat it here as a safety net (e.g. if the DB was wiped between logins).
-    if (isDbReady()) { // guard: skip if DB not yet connected
+    const email = sessionToken.email.toLowerCase();
+    const isAdmin = config.adminEmails.includes(email);
+    const role = isAdmin ? "admin" : "customer";
+    // Compute a deterministic id from email (same as verify-otp route does).
+    const hashedId = crypto.createHash("sha256").update(`user:${email}`).digest("hex").slice(0, 36);
+
+    let dbUser: User | null = null;
+    if (isDbReady()) {
       try {
-        await prisma.user.upsert({
-          where: { id: stub.id },
-          update: { email: sessionToken.email, role: stub.role },
-          create: {
-            id: stub.id,
-            email: sessionToken.email,
-            name: sessionToken.email.split("@")[0],
-            role: stub.role,
-            addresses: "[]",
-          },
+        // Upsert by EMAIL (unique), not by id — avoids unique constraint
+        // violations caused by old stub records with different ids.
+        dbUser = await prisma.user.upsert({
+          where: { email },
+          update: { role },
+          create: { id: hashedId, email, name: email.split("@")[0], role, addresses: "[]" },
         });
       } catch (e) {
         console.error("[auth] session user upsert failed:", e);
       }
     }
-    req.user = stub;
-    req.userId = stub.id;
-    req.userEmail = stub.email;
-    req.supabaseUserId = stub.id;
+
+    // Use the real DB id if we got one, otherwise fall back to the hashed id.
+    const userId = dbUser?.id ?? hashedId;
+    req.user = {
+      id: userId, email, name: email.split("@")[0], role,
+      addresses: "[]", createdAt: dbUser?.createdAt ?? new Date(), updatedAt: dbUser?.updatedAt ?? new Date(),
+    } as User;
+    req.userId = userId;
+    req.userEmail = email;
+    req.supabaseUserId = userId;
     return next();
   }
 
