@@ -226,10 +226,10 @@ function buildOrderEmailHtml(args: OrderConfirmationArgs): string {
 }
 
 export async function sendOrderConfirmationEmail(args: OrderConfirmationArgs): Promise<void> {
-  const subject = \`Order Confirmed: #\${args.orderId.split("-")[0].toUpperCase()}\`;
+  const subject = `Order Confirmed: #${args.orderId.split("-")[0].toUpperCase()}`;
 
   if (config.useMocks) {
-    console.log(\`\\n[email/mock] Order Confirmed for \${args.email} (AWB: \${args.awb || "pending"})\\n\`);
+    console.log(`\n[email/mock] Order Confirmed for ${args.email} (AWB: ${args.awb || "pending"})\n`);
     return;
   }
 
