@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction, RequestHandler } from "express";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { config, integrations } from "../config";
 import { prisma, isDbReady } from "../db";
 import { User } from "@prisma/client";
@@ -18,48 +19,31 @@ declare global {
 }
 
 /**
- * Verify a JWT signed with `JWT_SECRET`. Returns the decoded payload
- * (sub, email, sid, iat, exp) if the signature matches and the token
- * is not expired. Returns null on any failure.
+ * Verify a JWT signed with `JWT_SECRET` using the jsonwebtoken library.
+ * Returns the decoded payload or null on any failure.
  */
 export function verifyJwt(
   token: string
 ): { sub: string; email?: string; sid?: string; iat?: number; exp?: number } | null {
   if (!config.jwtSecret) return null;
-  const [headerB64, payloadB64, sigB64] = token.split(".");
-  if (!headerB64 || !payloadB64 || !sigB64) return null;
-  const sigInput = `${headerB64}.${payloadB64}`;
-  const expected = crypto
-    .createHmac("sha256", config.jwtSecret)
-    .update(sigInput)
-    .digest("base64url");
-  if (
-    expected.length !== sigB64.length ||
-    !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sigB64))
-  ) {
-    return null;
-  }
   try {
-    const payload = JSON.parse(
-      Buffer.from(payloadB64, "base64url").toString("utf8")
-    ) as {
-      sub?: string;
+    const payload = jwt.verify(token, config.jwtSecret) as {
+      sub: string;
       email?: string;
       sid?: string;
       iat?: number;
       exp?: number;
     };
     if (!payload.sub) return null;
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload;
   } catch {
     return null;
   }
 }
 
-/** Sign an admin JWT (HS256, base64url). */
+/** Sign an admin JWT. */
 export function signAdminJwt(email: string, ttlSeconds = 60 * 60 * 24 * 7): string {
-  return signJwt({ sub: "admin", email }, ttlSeconds);
+  return jwt.sign({ sub: "admin", email }, config.jwtSecret, { expiresIn: ttlSeconds });
 }
 
 /** Sign a session JWT for a verified OTP login. */
@@ -68,25 +52,7 @@ export function signSessionJwt(
   sid: string,
   ttlSeconds = 60 * 60 * 24 * 30
 ): string {
-  return signJwt({ sub: "session", email, sid }, ttlSeconds);
-}
-
-function signJwt(
-  payload: Record<string, unknown>,
-  ttlSeconds: number
-): string {
-  if (!config.jwtSecret) throw new Error("JWT_SECRET not configured");
-  const header = { alg: "HS256", typ: "JWT" };
-  const now = Math.floor(Date.now() / 1000);
-  const fullPayload = { ...payload, iat: now, exp: now + ttlSeconds };
-  const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString("base64url");
-  const headerB64 = b64(header);
-  const payloadB64 = b64(fullPayload);
-  const sig = crypto
-    .createHmac("sha256", config.jwtSecret)
-    .update(`${headerB64}.${payloadB64}`)
-    .digest("base64url");
-  return `${headerB64}.${payloadB64}.${sig}`;
+  return jwt.sign({ sub: "session", email, sid }, config.jwtSecret, { expiresIn: ttlSeconds });
 }
 
 /** @deprecated — use verifyJwt and check payload.sub === "admin" */
