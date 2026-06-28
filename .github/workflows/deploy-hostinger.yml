@@ -32,15 +32,21 @@ jobs:
       - name: 🔍 Verify Build Output
         run: ls -la dist/public/
 
-      - name: 📂 Sync files to Hostinger via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: dist/public/
-          server-dir: public_html/
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
+      - name: 📂 Sync files to Hostinger via lftp
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          sudo apt-get install -y lftp
+          if [ ! -d "dist/public" ]; then
+            echo "ERROR: dist/public directory does not exist!"
+            exit 1
+          fi
+          echo "Syncing dist/public to public_html..."
+          lftp -c "
+          set ssl:verify-certificate no;
+          open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
+          mirror -R dist/public/ public_html/ --ignore-time --parallel=10 --verbose;
+          quit;
+          "
