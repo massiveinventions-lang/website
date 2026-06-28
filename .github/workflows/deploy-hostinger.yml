@@ -29,14 +29,17 @@ jobs:
           VITE_RAZORPAY_KEY_ID: ${{ secrets.VITE_RAZORPAY_KEY_ID }}
         run: npm run build
 
+      - name: 🔍 Verify Build Output
+        run: ls -la dist/public/
+
       - name: 📂 Sync files to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/public/
-          server-dir: ./public_html/
+          local-dir: dist/public/
+          server-dir: public_html/
           exclude: |
             **/.git*
             **/.git*/**
