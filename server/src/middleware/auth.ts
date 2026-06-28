@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction, RequestHandler } from "express";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { config, integrations } from "../config";
-import { prisma } from "../db";
+import { prisma, isDbReady } from "../db";
 import { User } from "@prisma/client";
 
 declare global {
@@ -172,18 +172,11 @@ export const requireAuth: RequestHandler = async (
   // sub="session", email=<user>, sid=<loginOtp id>.
   const sessionToken = verifyJwt(bearer);
   if (sessionToken?.sub === "session" && sessionToken.email) {
-    if (config.adminEmails.includes(sessionToken.email.toLowerCase())) {
-      // Admin is logging in via the user flow — give them admin role.
-      const stub = makeStubUser(sessionToken.email);
-      req.user = stub;
-      req.userId = stub.id;
-      req.userEmail = stub.email;
-      req.supabaseUserId = stub.id;
-      return next();
-    }
-    // In mock mode: ensure the User row exists so Order.userId works.
-    if (config.useMocks) {
-      const stub = makeStubUser(sessionToken.email);
+    const stub = makeStubUser(sessionToken.email);
+    // Always ensure the User row exists — needed for Order.userId FK in both
+    // mock and production modes. The OTP verify-otp route also does this, but
+    // we repeat it here as a safety net (e.g. if the DB was wiped between logins).
+    if (isDbReady()) { // guard: skip if DB not yet connected
       try {
         await prisma.user.upsert({
           where: { id: stub.id },
@@ -197,10 +190,9 @@ export const requireAuth: RequestHandler = async (
           },
         });
       } catch (e) {
-        console.error("[auth] mock session upsert failed:", e);
+        console.error("[auth] session user upsert failed:", e);
       }
     }
-    const stub = makeStubUser(sessionToken.email);
     req.user = stub;
     req.userId = stub.id;
     req.userEmail = stub.email;
