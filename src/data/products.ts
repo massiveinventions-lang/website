@@ -153,7 +153,7 @@ export const products: Product[] = [
   {
     id: 4,
     name: "Massive Data Flow USB-C",
-    price: 129,
+    price: 9,
     rating: 4.6,
     reviews: 4087,
     category: "Cables",
