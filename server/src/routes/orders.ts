@@ -66,9 +66,23 @@ router.post(
     const shipping = subtotal >= 999 ? 0 : 49;
     const total = subtotal + shipping;
 
+    // Ensure the user actually exists in the DB before linking the foreign key.
+    // If the auth upsert failed (e.g. transient DB issue), we still want the
+    // order to go through, so we'll link it as a "guest" order (userId = null)
+    // but keep the customerEmail.
+    let validUserId: string | null = null;
+    if (req.user?.id) {
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+        if (dbUser) validUserId = dbUser.id;
+      } catch (e) {
+        console.warn("[orders] Failed to verify user existence for FK:", e);
+      }
+    }
+
     const order = await prisma.order.create({
       data: {
-        userId: req.user!.id,
+        userId: validUserId,
         customerEmail: req.userEmail,
         items: JSON.stringify(orderItems),
         subtotal,

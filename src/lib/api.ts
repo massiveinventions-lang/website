@@ -142,7 +142,11 @@ export class ApiError extends Error {
   status: number;
   detail?: unknown;
   constructor(status: number, detail?: unknown) {
-    super(`API ${status}`);
+    let msg = `API ${status}`;
+    if (detail && typeof detail === "object" && "error" in detail) {
+      msg = String((detail as { error: string }).error);
+    }
+    super(msg);
     this.status = status;
     this.detail = detail;
   }
