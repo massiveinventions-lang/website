@@ -11,6 +11,7 @@
  */
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
+import { API_BASE } from "./api";
 
 const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? "";
 const anonKey =
@@ -163,7 +164,7 @@ export async function requestOtp(email: string): Promise<RequestOtpResult> {
   const sb = getSupabase();
   if (!sb) {
     // Dev/mock path: call our backend.
-    const res = await fetch("/api/auth/request-otp", {
+    const res = await fetch(`${API_BASE}/api/auth/request-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -200,7 +201,7 @@ export async function verifyOtp(
 ): Promise<VerifyOtpResult> {
   const sb = getSupabase();
   if (!sb) {
-    const res = await fetch("/api/auth/verify-otp", {
+    const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, code }),
