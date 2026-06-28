@@ -32,15 +32,19 @@ export async function connectDB(): Promise<void> {
     console.error("[db] Prisma connect failed:", err);
     throw err;
   }
-  // Push schema for SQLite in dev (idempotent)
-  if (process.env.NODE_ENV !== "production" && process.env.DATABASE_URL?.startsWith("file:")) {
+  // In production: push schema to ensure tables exist (idempotent).
+  // In dev with SQLite: also push schema.
+  const isPostgres = process.env.DATABASE_URL?.startsWith("postgresql") || process.env.DATABASE_URL?.startsWith("postgres");
+  if (isPostgres || process.env.DATABASE_URL?.startsWith("file:")) {
     try {
       const { execSync } = await import("child_process");
       execSync("npx prisma db push --skip-generate --accept-data-loss", {
-        stdio: "ignore",
+        stdio: "pipe",
+        timeout: 60_000,
       });
       console.log("[db] schema pushed");
     } catch (err) {
+      // Non-fatal: log and continue. Tables may already exist.
       console.warn(
         "[db] schema push skipped:",
         err instanceof Error ? err.message : err

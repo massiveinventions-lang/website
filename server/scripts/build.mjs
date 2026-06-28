@@ -1,19 +1,18 @@
 import fs from "fs";
 import { execSync } from "child_process";
 
-// If we're on Render (or any production environment), we need to swap to Postgres
+// If we're on Render (or any production environment), swap to the
+// PostgreSQL schema and regenerate the Prisma client.
+// NOTE: We do NOT run `prisma db push` here — that requires a live DB
+// connection which can time out during the build phase. Instead, db push
+// happens at server startup inside connectDB().
 if (process.env.NODE_ENV === "production" || process.env.RENDER) {
-  console.log("==> Production environment detected. Swapping to Postgres schema...");
+  console.log("==> Production build: swapping to PostgreSQL schema...");
   fs.copyFileSync("prisma/schema.production.prisma", "prisma/schema.prisma");
-  
-  console.log("==> Generating Prisma client...");
+  console.log("==> Generating Prisma client for PostgreSQL...");
   execSync("npx prisma generate", { stdio: "inherit" });
-  
-  if (process.env.DATABASE_URL) {
-    console.log("==> Pushing schema to database...");
-    execSync("npx prisma db push --accept-data-loss", { stdio: "inherit" });
-  }
+  console.log("==> Build complete. DB schema will be pushed at server startup.");
 } else {
-  console.log("==> Development environment detected. Generating Prisma client...");
+  console.log("==> Dev build: generating Prisma client (SQLite)...");
   execSync("npx prisma generate", { stdio: "inherit" });
 }
