@@ -36,7 +36,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/public/ # Vite outputs to dist/public/
-          server-dir: ./ # Hostinger domain FTP accounts usually start inside public_html
+          server-dir: ./public_html/ # Hostinger's public folder
           exclude: |
             **/.git*
             **/.git*/**
