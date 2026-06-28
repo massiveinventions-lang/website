@@ -115,7 +115,7 @@ router.post(
 
     const rzp = await createRazorpayOrder({
       amountPaise: order.total * 100,
-      receipt: `rcpt_${order.id}`,
+      receipt: `rcpt_${order.id.replace(/-/g, "").slice(0, 30)}`,
       notes: { orderId: order.id },
     });
     await prisma.order.update({
