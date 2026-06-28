@@ -3,7 +3,7 @@ name: Deploy to Hostinger
 on:
   push:
     branches:
-      - main # This triggers the deployment when you push to the 'main' branch
+      - main
 
 jobs:
   web-deploy:
@@ -18,37 +18,38 @@ jobs:
         with:
           node-version: 20
 
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: 📦 Install Dependencies
-        run: npm install --no-audit --no-fund
+        run: pnpm install --filter massive-inventions
 
       - name: 🔨 Build Project
         env:
-          # We pass GitHub Secrets into the build process so they are baked into the files
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_WEB3FORMS_KEY: ${{ secrets.VITE_WEB3FORMS_KEY }}
           VITE_RAZORPAY_KEY_ID: ${{ secrets.VITE_RAZORPAY_KEY_ID }}
-        run: npm run build
+        run: pnpm run build
 
       - name: 🔍 Verify Build Output
-        run: ls -la dist/public/
-
-      - name: 📂 Sync files to Hostinger via lftp
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
-          if [ -z "$FTP_SERVER" ] || [ -z "$FTP_USERNAME" ] || [ -z "$FTP_PASSWORD" ]; then
-            echo "ERROR: FTP secrets are empty!"
-            exit 1
-          fi
-          sudo apt-get install -y lftp
-          
-          # Strip ftp:// prefix if present - lftp open command needs bare hostname/IP
-          SERVER=$(echo "$FTP_SERVER" | sed 's|^ftp://||' | sed 's|^ftps://||')
-          echo "Connecting to FTP server: $SERVER"
-          echo "FTP Username: $FTP_USERNAME"
-          
-          lftp -u "$FTP_USERNAME,$FTP_PASSWORD" \
-            -e "set ftp:ssl-allow no; set net:timeout 30; set net:max-retries 3; set cmd:fail-exit yes; mirror -R --delete dist/public/ . --ignore-time --parallel=5 --verbose; quit" \
-            "$SERVER"
+          echo "=== Build files ==="
+          ls -la dist/public/
+          echo "=== Assets ==="
+          ls -la dist/public/assets/ | head -20
+          echo "=== index.html check ==="
+          grep -c "script" dist/public/index.html && echo "index.html looks good"
+
+      - name: 📂 Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/public/
+          server-dir: /
+          dangerous-clean-slate: true
+          log-level: verbose
+          timeout: 120000
