@@ -50,7 +50,19 @@ export const errorHandler = (
     }
   }
   console.error("[err]", err);
+  // Serialize properly so Prisma errors (which are objects) are readable
+  let detail: unknown = String(err);
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    detail = {
+      name: e["name"],
+      message: e["message"],
+      code: e["code"],
+      meta: e["meta"],
+      stack: (e["stack"] as string | undefined)?.split("\n").slice(0, 5),
+    };
+  }
   return res
     .status(500)
-    .json({ error: "Internal server error", detail: String(err) });
+    .json({ error: "Internal server error", detail });
 };
