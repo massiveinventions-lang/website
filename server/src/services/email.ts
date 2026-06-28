@@ -148,3 +148,108 @@ export async function sendLoginOtp(args: SendOtpArgs): Promise<void> {
     throw new Error(`Resend failed: ${error.message ?? "unknown error"}`);
   }
 }
+
+interface OrderConfirmationArgs {
+  email: string;
+  orderId: string;
+  total: number;
+  trackingUrl?: string;
+  awb?: string;
+}
+
+function buildOrderEmailHtml(args: OrderConfirmationArgs): string {
+  const trackButton = args.trackingUrl 
+    ? `
+      <tr>
+        <td align="center" style="padding-top:24px;">
+          <a href="${args.trackingUrl}" style="display:inline-block;padding:14px 32px;background-color:${BRAND.primary};color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;border-radius:8px;box-shadow:0 4px 12px rgba(192, 120, 56, 0.25);">Track Your Order</a>
+          <p style="margin-top:16px;font-size:14px;color:${BRAND.textMuted};">AWB: <strong>${args.awb}</strong></p>
+        </td>
+      </tr>
+    `
+    : `
+      <tr>
+        <td align="center" style="padding-top:24px;">
+          <p style="margin-top:16px;font-size:14px;color:${BRAND.textMuted};">Your tracking details will be updated shortly.</p>
+        </td>
+      </tr>
+    `;
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:${BRAND.background};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${BRAND.text};">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:${BRAND.background};padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+          <tr>
+            <td style="padding:32px 32px 16px 32px;text-align:center;border-bottom:1px solid #f0ebe4;">
+              <h1 style="margin:0;font-size:24px;font-weight:900;color:${BRAND.text};letter-spacing:-0.02em;">
+                Massive <span style="color:${BRAND.primary};">Inventions</span>
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 16px 0;font-size:20px;font-weight:700;text-align:center;">Order Confirmed!</h2>
+              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.5;color:${BRAND.textMuted};text-align:center;">
+                Thank you for your purchase. We have received your order and are preparing it for shipment.
+              </p>
+              <div style="background:#FAF8F5;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+                <p style="margin:0 0 8px 0;font-size:14px;color:${BRAND.textMuted};">Order ID</p>
+                <p style="margin:0 0 16px 0;font-size:16px;font-weight:600;">${args.orderId.split("-")[0].toUpperCase()}</p>
+                <p style="margin:0 0 8px 0;font-size:14px;color:${BRAND.textMuted};">Total Paid</p>
+                <p style="margin:0;font-size:18px;font-weight:700;color:${BRAND.primary};">₹${args.total.toLocaleString("en-IN")}</p>
+              </div>
+              ${trackButton}
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#faf8f5;padding:24px 32px;text-align:center;border-top:1px solid #f0ebe4;">
+              <p style="margin:0;font-size:13px;color:#a89f91;line-height:1.5;">
+                Need help? Reply to this email.<br>
+                &copy; ${new Date().getFullYear()} Massive Inventions. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendOrderConfirmationEmail(args: OrderConfirmationArgs): Promise<void> {
+  const subject = \`Order Confirmed: #\${args.orderId.split("-")[0].toUpperCase()}\`;
+
+  if (config.useMocks) {
+    console.log(\`\\n[email/mock] Order Confirmed for \${args.email} (AWB: \${args.awb || "pending"})\\n\`);
+    return;
+  }
+
+  const apiKey = process.env.RESEND_API_KEY ?? "";
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY missing, skipping order email");
+    return;
+  }
+
+  const fromAddress = process.env.RESEND_FROM ?? "Massive Inventions <no-reply@massiveinvention.in>";
+  const resend = new Resend(apiKey);
+
+  const { error } = await resend.emails.send({
+    from: fromAddress,
+    to: [args.email],
+    subject,
+    html: buildOrderEmailHtml(args),
+  });
+
+  if (error) {
+    console.error(\`[email] Failed to send order email: \${error.message}\`);
+  }
+}

@@ -3,16 +3,77 @@ import { z } from "zod";
 import { prisma } from "../db";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import { HttpError, requireDb } from "../middleware/errors";
-import {
-  createRazorpayOrder,
-  verifyRazorpaySignature,
-  verifyWebhookSignature,
-} from "../services/razorpay";
-import {
-  createAdhocOrder,
-  assignAwb,
-  buildTrackingUrl,
-} from "../services/shiprocket";
+import { createRazorpayOrder, verifyRazorpaySignature, verifyWebhookSignature } from "../services/razorpay";
+import { createAdhocOrder, assignAwb, buildTrackingUrl } from "../services/shiprocket";
+import { sendOrderConfirmationEmail } from "../services/email";
+
+async function postPaymentFulfillment(order: any, userName: string | undefined, userEmail: string | undefined) {
+  let awbCode: string | undefined;
+  let trackUrl: string | undefined;
+
+  if (integrations.shiprocket || config.useMocks) {
+    try {
+      const addr = JSON.parse(order.shippingAddress);
+      const items = JSON.parse(order.items);
+      const ship = await createAdhocOrder({
+        orderId: order.id,
+        orderDate: new Date().toISOString(),
+        billing: {
+          name: userName ?? "Customer",
+          email: order.customerEmail ?? userEmail ?? "customer@example.com",
+          phone: addr.phone,
+          address: addr.line1 + (addr.line2 ? ", " + addr.line2 : ""),
+          city: addr.city,
+          state: addr.state,
+          country: addr.country ?? "India",
+          pincode: addr.pincode,
+        },
+        items: items.map((i: any) => ({
+          name: i.name,
+          sku: i.productId,
+          units: i.quantity,
+          sellingPrice: i.price,
+        })),
+        paymentMethod: "Prepaid",
+      });
+      const awb = await assignAwb(ship.shipment_id);
+      awbCode = awb.awb_code;
+      trackUrl = buildTrackingUrl(awb.awb_code);
+
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: "shipped",
+          shippingInfo: JSON.stringify({
+            shiprocketOrderId: String(ship.order_id),
+            awb: awbCode,
+            courier: awb.courier_name,
+            trackingUrl: trackUrl,
+          }),
+        },
+      });
+    } catch (err) {
+      console.error("[shiprocket] create/assign failed:", err);
+    }
+  }
+
+  // Always send confirmation email, even if Shiprocket fails
+  try {
+    const emailTo = order.customerEmail ?? userEmail;
+    if (emailTo) {
+      await sendOrderConfirmationEmail({
+        email: emailTo,
+        orderId: order.id,
+        total: order.total,
+        awb: awbCode,
+        trackingUrl: trackUrl,
+      });
+    }
+  } catch (e) {
+    console.error("[email] order confirmation failed:", e);
+  }
+}
+
 import { integrations, config } from "../config";
 
 const router = Router();
@@ -179,67 +240,55 @@ router.post(
       data: { status: "paid", payment: updatedPayment },
     });
 
-    if (integrations.shiprocket || config.useMocks) {
-      void (async () => {
-        try {
-          const addr = JSON.parse(order.shippingAddress) as {
-            line1: string;
-            line2?: string;
-            city: string;
-            state: string;
-            country?: string;
-            pincode: string;
-            phone: string;
-          };
-          const items = JSON.parse(order.items) as Array<{
-            name: string;
-            productId: string;
-            price: number;
-            quantity: number;
-          }>;
-          const ship = await createAdhocOrder({
-            orderId: order.id,
-            orderDate: new Date().toISOString(),
-            billing: {
-              name: req.user?.name ?? "Customer",
-              email: order.customerEmail ?? req.user?.email ?? "customer@example.com",
-              phone: addr.phone,
-              address: addr.line1 + (addr.line2 ? ", " + addr.line2 : ""),
-              city: addr.city,
-              state: addr.state,
-              country: addr.country ?? "India",
-              pincode: addr.pincode,
-            },
-            items: items.map((i) => ({
-              name: i.name,
-              sku: i.productId,
-              units: i.quantity,
-              sellingPrice: i.price,
-            })),
-            paymentMethod: "Prepaid",
-          });
-          const awb = await assignAwb(ship.shipment_id);
-          await prisma.order.update({
-            where: { id: order.id },
-            data: {
-              status: "shipped",
-              shippingInfo: JSON.stringify({
-                shiprocketOrderId: String(ship.order_id),
-                awb: awb.awb_code,
-                courier: awb.courier_name,
-                trackingUrl: buildTrackingUrl(awb.awb_code),
-              }),
-            },
-          });
-        } catch (err) {
-          console.error("[shiprocket] create/assign failed:", err);
-        }
-      })();
-    }
+    void postPaymentFulfillment(order, req.user?.name, req.user?.email);
 
     res.json({ ok: true, orderId: order.id });
   }
 );
+
+// POST /api/orders/verify_redirect
+// Used by Razorpay when callback_url is set (e.g. mobile UPI redirect flow)
+router.post("/verify_redirect", async (req: Request, res: Response) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    return res.redirect(config.clientOrigin + "/checkout?error=InvalidPayment");
+  }
+
+  const ok = config.useMocks || !integrations.razorpay || verifyRazorpaySignature({
+    razorpayOrderId: razorpay_order_id,
+    razorpayPaymentId: razorpay_payment_id,
+    razorpaySignature: razorpay_signature,
+  });
+  if (!ok) return res.redirect(config.clientOrigin + "/checkout?error=SignatureFailed");
+
+  const allOrders = await prisma.order.findMany();
+  const order = allOrders.find((o) => {
+    try {
+      return JSON.parse(o.payment).razorpayOrderId === razorpay_order_id;
+    } catch {
+      return false;
+    }
+  });
+
+  if (!order) return res.redirect(config.clientOrigin + "/checkout?error=OrderNotFound");
+
+  if (order.status === "pending") {
+    const updatedPayment = JSON.stringify({
+      ...JSON.parse(order.payment),
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
+    });
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { status: "paid", payment: updatedPayment },
+    });
+    void postPaymentFulfillment(order, undefined, order.customerEmail || undefined);
+  }
+
+  // Redirect to success page and instruct frontend to clear the cart
+  return res.redirect(config.clientOrigin + "/track-order?id=" + order.id + "&clear_cart=1");
+});
 
 // POST /api/orders/webhook/razorpay
 router.post("/webhook/razorpay", async (req: Request, res: Response) => {
@@ -270,6 +319,7 @@ router.post("/webhook/razorpay", async (req: Request, res: Response) => {
           where: { id: order.id },
           data: { status: "paid" },
         });
+        void postPaymentFulfillment(order, undefined, order.customerEmail || undefined);
       }
     }
   }

@@ -207,32 +207,8 @@ export default function Checkout() {
         name: "Massive Inventions",
         description: `Order ${orderId.slice(0, 8)}`,
         order_id: razorpayOrderId,
-        handler: async (resp: {
-          razorpay_payment_id: string;
-          razorpay_order_id: string;
-          razorpay_signature: string;
-        }) => {
-          try {
-            await orders.verify(
-              {
-                razorpayOrderId: resp.razorpay_order_id,
-                razorpayPaymentId: resp.razorpay_payment_id,
-                razorpaySignature: resp.razorpay_signature,
-              },
-              token
-            );
-            clearCart();
-            setIsCartOpen(false);
-            setSuccessOrderId(orderId);
-            toast.success("Payment successful!");
-          } catch (e) {
-            setError(
-              e instanceof Error
-                ? `Payment captured but verification failed: ${e.message}`
-                : "Payment verification failed"
-            );
-          }
-        },
+        callback_url: `${API_BASE || window.location.origin}/api/orders/verify_redirect`,
+        redirect: true,
         prefill: {
           email: user?.email,
           contact: address.phone,

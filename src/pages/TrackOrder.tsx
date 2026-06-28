@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, Link } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAuthToken } from "@/lib/supabase";
 import { ApiError, orders as ordersApi } from "@/lib/api";
+import { useCart } from "@/lib/cart";
 
 type Stage = "pending" | "paid" | "shipped" | "out_for_delivery" | "delivered";
 
@@ -54,11 +55,47 @@ interface FoundOrder {
 
 export default function TrackOrder() {
   const [, navigate] = useLocation();
+  const { clearCart } = useCart();
   const [orderId, setOrderId] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<FoundOrder | null>(null);
+
+  // Auto-load order if ID is in the URL, and clear cart if requested
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search);
+    const idFromUrl = qs.get("id");
+    const shouldClear = qs.get("clear_cart");
+
+    if (shouldClear === "1") {
+      clearCart();
+      // Clean up URL so refresh doesn't trigger it again
+      const newUrl = window.location.pathname + (idFromUrl ? `?id=${idFromUrl}` : "");
+      window.history.replaceState({}, "", newUrl);
+    }
+
+    if (idFromUrl && !orderId) {
+      setOrderId(idFromUrl);
+      // Automatically trigger the lookup
+      setLoading(true);
+      const fetchOrder = async () => {
+        try {
+          const token = await getAuthToken();
+          // if there's no token, we just fail silently and let them manually enter email
+          if (token) {
+            const res = await ordersApi.get(idFromUrl, token);
+            setOrder(res.order as unknown as FoundOrder);
+          }
+        } catch (err) {
+          // Silent catch on auto-load
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchOrder();
+    }
+  }, [clearCart]);
 
   const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
