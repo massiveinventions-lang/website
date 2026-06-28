@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "echo 'No build step needed — using tsx at runtime'",
+    "build": "node scripts/build.mjs",
     "start": "tsx src/index.ts",
     "seed": "tsx prisma/seed.ts",
     "smoke": "tsx src/scripts/smoke.ts",
