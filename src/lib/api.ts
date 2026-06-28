@@ -143,8 +143,15 @@ export class ApiError extends Error {
   detail?: unknown;
   constructor(status: number, detail?: unknown) {
     let msg = `API ${status}`;
-    if (detail && typeof detail === "object" && "error" in detail) {
-      msg = String((detail as { error: string }).error);
+    if (detail && typeof detail === "object") {
+      const d = detail as { error?: string; detail?: any };
+      if (d.detail) {
+        if (typeof d.detail === "string") msg = d.detail;
+        else if (d.detail.message) msg = d.detail.message;
+        else msg = JSON.stringify(d.detail);
+      } else if (d.error) {
+        msg = d.error;
+      }
     }
     super(msg);
     this.status = status;
