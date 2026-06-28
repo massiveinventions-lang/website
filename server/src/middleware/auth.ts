@@ -244,7 +244,6 @@ export const requireAuth: RequestHandler = async (
     } catch (e) {
       console.error("[auth] mock upsert failed:", e);
     }
-    const stub = makeStubUser(email);
     req.user = stub;
     req.userId = stub.id;
     req.userEmail = stub.email;
