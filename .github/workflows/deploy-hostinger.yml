@@ -43,10 +43,13 @@ jobs:
             echo "ERROR: dist/public directory does not exist!"
             exit 1
           fi
-          echo "Syncing dist/public to public_html..."
+          echo "Syncing dist/public to current directory..."
           lftp -c "
-          set ssl:verify-certificate no;
+          set cmd:fail-exit yes;
+          set ftp:ssl-allow no;
+          set net:timeout 10;
+          set net:max-retries 2;
           open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
-          mirror -R --delete dist/public/ public_html/ --ignore-time --parallel=10 --verbose;
+          mirror -R --delete dist/public/ . --ignore-time --parallel=10 --verbose;
           quit;
           "
