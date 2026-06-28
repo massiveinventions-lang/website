@@ -50,12 +50,15 @@ jobs:
             exit 1
           fi
           echo "Syncing dist/public to current directory..."
-          lftp -c "
-          set cmd:fail-exit yes;
-          set ftp:ssl-allow no;
-          set net:timeout 10;
-          set net:max-retries 2;
-          open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
-          mirror -R --delete dist/public/ . --ignore-time --parallel=10 --verbose;
-          quit;
-          "
+          
+          cat > deploy.lftp <<EOF
+          set cmd:fail-exit yes
+          set ftp:ssl-allow no
+          set net:timeout 10
+          set net:max-retries 2
+          open -u "${FTP_USERNAME}","${FTP_PASSWORD}" "${FTP_SERVER}"
+          mirror -R --delete dist/public/ . --ignore-time --parallel=10 --verbose
+          quit
+          EOF
+          
+          lftp -f deploy.lftp
