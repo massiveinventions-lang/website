@@ -38,6 +38,12 @@ jobs:
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
+          if [ -z "$FTP_SERVER" ] || [ -z "$FTP_USERNAME" ] || [ -z "$FTP_PASSWORD" ]; then
+            echo "ERROR: One or more FTP secrets (FTP_SERVER, FTP_USERNAME, FTP_PASSWORD) are completely empty!"
+            echo "Please go to GitHub Repository Settings -> Secrets and variables -> Actions, and add them!"
+            exit 1
+          fi
+          
           sudo apt-get install -y lftp
           if [ ! -d "dist/public" ]; then
             echo "ERROR: dist/public directory does not exist!"
