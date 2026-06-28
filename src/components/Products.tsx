@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "../../cable/hooks/useCart";
 import { imgSrc, imgPosition } from "@/lib/api";
 import { useProducts } from "@/lib/queries";
+import OptimizedImage from "@/components/OptimizedImage";
 
 const FILTERS = ["All", "Speakers", "Earbuds", "Chargers", "Cables"] as const;
 type Filter = typeof FILTERS[number];
@@ -123,14 +124,14 @@ export default function Products() {
                   )}
 
                   {/* Base image — fills the 1:1 frame, fades out on hover when a hoverImage exists */}
-                  <img
+                  <OptimizedImage
                     src={imgSrc(product.image)}
                     alt={product.name}
                     loading="lazy"
                     decoding="async"
+                    objectPosition={imgPosition(product.image)}
                     className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${product.hoverImage ? "group-hover:opacity-0 group-hover:scale-105" : "group-hover:scale-105"}`}
                     style={{
-                      objectPosition: imgPosition(product.image),
                       transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
                     }}
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
@@ -138,14 +139,14 @@ export default function Products() {
 
                   {/* Hover image — fades in at same anchor point */}
                   {product.hoverImage && (
-                    <img
+                    <OptimizedImage
                       src={imgSrc(product.hoverImage)}
                       alt={`${product.name} hover`}
                       loading="lazy"
                       decoding="async"
+                      objectPosition={imgPosition(product.hoverImage)}
                       className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
                       style={{
-                        objectPosition: imgPosition(product.hoverImage),
                         transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
                       }}
                     />

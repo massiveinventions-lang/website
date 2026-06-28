@@ -1,18 +1,23 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
-import ProductDetail from "@/pages/ProductDetail";
-import TrackOrder from "@/pages/TrackOrder";
-import ShippingPolicy from "@/pages/ShippingPolicy";
-import ReturnsWarranty from "@/pages/ReturnsWarranty";
-import FAQs from "@/pages/FAQs";
-import Contact from "@/pages/Contact";
-import Checkout from "@/pages/Checkout";
 import { CartProvider } from "../cable/hooks/useCart";
+import { Loader2 } from "lucide-react";
 
+// Page-level routes: lazy-loaded so they are code-split into separate
+// chunks and only downloaded when the user navigates to that route.
+const NotFound     = lazy(() => import("@/pages/not-found"));
+const ProductDetail = lazy(() => import("@/pages/ProductDetail"));
+const TrackOrder   = lazy(() => import("@/pages/TrackOrder"));
+const ShippingPolicy = lazy(() => import("@/pages/ShippingPolicy"));
+const ReturnsWarranty = lazy(() => import("@/pages/ReturnsWarranty"));
+const FAQs         = lazy(() => import("@/pages/FAQs"));
+const Contact      = lazy(() => import("@/pages/Contact"));
+const Checkout     = lazy(() => import("@/pages/Checkout"));
+
+// Home-page sections: eagerly imported because they are shown immediately.
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import StatsMarquee from "@/components/StatsMarquee";
@@ -23,6 +28,15 @@ import Reviews from "@/components/Reviews";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
+
+// Shown while lazy-loaded route chunks are downloading.
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+      <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-brown)]" />
+    </div>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,17 +78,19 @@ function AnimatedRoutes() {
   }, [location]);
 
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/products/:id" component={ProductDetail} />
-      <Route path="/track-order" component={TrackOrder} />
-      <Route path="/shipping-policy" component={ShippingPolicy} />
-      <Route path="/returns-warranty" component={ReturnsWarranty} />
-      <Route path="/faqs" component={FAQs} />
-      <Route path="/contact" component={Contact} />
-      <Route path="/checkout" component={Checkout} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<PageLoader />}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/products/:id" component={ProductDetail} />
+        <Route path="/track-order" component={TrackOrder} />
+        <Route path="/shipping-policy" component={ShippingPolicy} />
+        <Route path="/returns-warranty" component={ReturnsWarranty} />
+        <Route path="/faqs" component={FAQs} />
+        <Route path="/contact" component={Contact} />
+        <Route path="/checkout" component={Checkout} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 

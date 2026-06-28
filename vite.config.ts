@@ -44,6 +44,37 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    target: "esnext",
+    sourcemap: false,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        // Split large vendor bundles into separately-cached chunks.
+        // Browsers can cache these independently across deployments.
+        manualChunks: (id) => {
+          // Three.js + React Three Fiber/Drei → loaded lazily anyway via Speaker3D
+          if (id.includes("three") || id.includes("@react-three")) {
+            return "vendor-three";
+          }
+          // Framer Motion — animations
+          if (id.includes("framer-motion")) {
+            return "vendor-motion";
+          }
+          // Radix UI primitives
+          if (id.includes("@radix-ui")) {
+            return "vendor-radix";
+          }
+          // React core
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom")) {
+            return "vendor-react";
+          }
+          // TanStack Query + Supabase
+          if (id.includes("@tanstack") || id.includes("@supabase")) {
+            return "vendor-data";
+          }
+        },
+      },
+    },
   },
   server: {
     port,
