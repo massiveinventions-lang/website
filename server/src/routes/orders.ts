@@ -202,6 +202,7 @@ router.post(
             orderDate: new Date().toISOString(),
             billing: {
               name: req.user?.name ?? "Customer",
+              email: order.customerEmail ?? req.user?.email ?? "customer@example.com",
               phone: addr.phone,
               address: addr.line1 + (addr.line2 ? ", " + addr.line2 : ""),
               city: addr.city,

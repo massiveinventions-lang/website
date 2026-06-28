@@ -92,6 +92,7 @@ export interface CreateShipmentInput {
   channelId?: string;
   billing: {
     name: string;
+    email: string;
     phone: string;
     address: string;
     city: string;
@@ -121,7 +122,10 @@ export async function createAdhocOrder(input: CreateShipmentInput) {
         order_date: input.orderDate,
         channel_id: input.channelId ?? "",
         billing_customer_name: input.billing.name,
+        billing_last_name: "Customer", // mandatory fallback
+        billing_email: input.billing.email,
         billing_phone: input.billing.phone,
+        shipping_is_billing: 1,
         billing_address: input.billing.address,
         billing_city: input.billing.city,
         billing_state: input.billing.state,
@@ -138,6 +142,10 @@ export async function createAdhocOrder(input: CreateShipmentInput) {
         giftwrap_charges: input.giftwrapCharges ?? 0,
         transaction_fee: input.transactionFee ?? 0,
         pickup_location: config.shiprocket.pickupLocation,
+        length: 10,
+        breadth: 10,
+        height: 10,
+        weight: 0.5,
       }),
     }
   );
