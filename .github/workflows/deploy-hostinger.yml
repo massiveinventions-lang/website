@@ -47,6 +47,6 @@ jobs:
           lftp -c "
           set ssl:verify-certificate no;
           open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
-          mirror -R dist/public/ public_html/ --ignore-time --parallel=10 --verbose;
+          mirror -R --delete dist/public/ public_html/ --ignore-time --parallel=10 --verbose;
           quit;
           "
