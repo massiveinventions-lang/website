@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "../../cable/hooks/useCart";
 import { useSession, getAuthToken } from "@/lib/supabase";
-import { orders } from "@/lib/api";
+import { orders, API_BASE } from "@/lib/api";
 
 type ShippingAddress = {
   line1: string;
