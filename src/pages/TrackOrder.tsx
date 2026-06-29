@@ -22,7 +22,7 @@ import { getAuthToken } from "@/lib/supabase";
 import { ApiError, orders as ordersApi } from "@/lib/api";
 import { useCart } from "@/cable/hooks/useCart";
 
-type Stage = "pending" | "paid" | "shipped" | "out_for_delivery" | "delivered";
+type Stage = "pending" | "paid" | "shipped" | "out_for_delivery" | "delivered" | "cancelled" | "refunded";
 
 const STAGES: { id: Stage; label: string; icon: typeof Box; desc: string }[] = [
   { id: "pending", label: "Order Placed", icon: Box, desc: "We've received your order." },

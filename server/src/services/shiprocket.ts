@@ -11,6 +11,20 @@ async function auth(): Promise<string> {
       "Shiprocket not configured (SHIPROCKET_EMAIL/PASSWORD missing)"
     );
   }
+  const fs = require("fs");
+  const tokenPath = require("path").join(process.cwd(), ".shiprocket_token");
+  
+  if (!_token) {
+    try {
+      const cached = JSON.parse(fs.readFileSync(tokenPath, "utf8"));
+      if (cached && cached.expiresAt > Date.now() + 60_000) {
+        _token = cached;
+      }
+    } catch (e) {
+      // no valid cache file
+    }
+  }
+
   if (_token && _token.expiresAt > Date.now() + 60_000) return _token.value;
 
   const res = await fetch(`${BASE}/auth/login`, {
@@ -31,6 +45,13 @@ async function auth(): Promise<string> {
     value: data.token,
     expiresAt: Date.now() + 9 * 24 * 60 * 60 * 1000,
   };
+  
+  try {
+    fs.writeFileSync(tokenPath, JSON.stringify(_token));
+  } catch (e) {
+    console.warn("Could not write shiprocket token cache to disk", e);
+  }
+
   return _token.value;
 }
 

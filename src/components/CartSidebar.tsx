@@ -78,7 +78,7 @@ export default function CartSidebar() {
                         <div className="flex items-center bg-white rounded-full px-2 py-1 shadow-sm">
                           <button
                             className="p-1 hover:text-[var(--accent-brown)]"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                           >
                             <Minus size={14} />
                           </button>

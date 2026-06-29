@@ -102,8 +102,9 @@ router.get("/", async (req: Request, res: Response) => {
   const { category, q, limit, skip } = req.query;
   const where: Record<string, unknown> = {};
   if (category && category !== "All") where.category = category;
-  if (q && typeof q === "string")
-    where.name = { contains: q };
+  if (q && typeof q === "string") {
+    where.name = { contains: q, mode: "insensitive" };
+  }
 
   const products = await prisma.product.findMany({
     where,

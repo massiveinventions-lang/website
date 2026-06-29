@@ -38,7 +38,7 @@ export function createApp() {
 
   // Razorpay webhook needs raw body for HMAC verification
   app.use(
-    "/api/orders/webhook",
+    "/api/orders/webhook/razorpay",
     express.raw({ type: "*/*" }),
     (req, _res, next) => {
       (req as Request & { rawBody?: string }).rawBody = Buffer.isBuffer(req.body)

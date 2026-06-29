@@ -151,9 +151,9 @@ router.post("/verify-otp", async (req: Request, res: Response) => {
     .update(`user:${body.email}`)
     .digest("hex")
     .slice(0, 36);
-  await prisma.user.upsert({
-    where: { id: userId },
-    update: { email: body.email, ...(isAdmin ? { role: "admin" } : {}) },
+  const dbUser = await prisma.user.upsert({
+    where: { email: body.email },
+    update: isAdmin ? { role: "admin" } : {},
     create: {
       id: userId,
       email: body.email,
@@ -164,7 +164,7 @@ router.post("/verify-otp", async (req: Request, res: Response) => {
   });
 
   // Issue a session JWT. The user is now authenticated.
-  const token = signSessionJwt(body.email, userId);
+  const token = signSessionJwt(body.email, dbUser.id);
 
   res.json({
     ok: true,

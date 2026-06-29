@@ -193,9 +193,9 @@ export const requireAuth: RequestHandler = async (
     const email = bearer.includes("@") ? bearer : `${bearer}@example.com`;
     const stub = makeStubUser(email);
     try {
-      await prisma.user.upsert({
-        where: { id: stub.id },
-        update: { email, role: stub.role },
+      const dbUser = await prisma.user.upsert({
+        where: { email },
+        update: { role: stub.role },
         create: {
           id: stub.id,
           email,
@@ -204,6 +204,7 @@ export const requireAuth: RequestHandler = async (
           addresses: "[]",
         },
       });
+      stub.id = dbUser.id;
     } catch (e) {
       console.error("[auth] mock upsert failed:", e);
     }
