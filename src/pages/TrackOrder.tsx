@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAuthToken } from "@/lib/supabase";
 import { ApiError, orders as ordersApi } from "@/lib/api";
-import { useCart } from "@/cable/hooks/useCart";
+import { useCart } from "../../cable/hooks/useCart";
 
 type Stage = "pending" | "paid" | "shipped" | "out_for_delivery" | "delivered" | "cancelled" | "refunded";
 
