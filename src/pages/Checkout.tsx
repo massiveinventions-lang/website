@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "../../cable/hooks/useCart";
 import { useSession, getAuthToken } from "@/lib/supabase";
-import { orders, API_BASE } from "@/lib/api";
+import { orders } from "@/lib/api";
 
 type ShippingAddress = {
   line1: string;
@@ -207,8 +207,29 @@ export default function Checkout() {
         name: "Massive Inventions",
         description: `Order ${orderId.slice(0, 8)}`,
         order_id: razorpayOrderId,
-        callback_url: `${API_BASE || window.location.origin}/api/orders/verify_redirect`,
-        redirect: true,
+        handler: async function (response: any) {
+          try {
+            const freshToken = await getAuthToken();
+            if (!freshToken) {
+              setError("Session expired. Please sign in again.");
+              setSubmitting(false);
+              return;
+            }
+            await orders.verify(
+              {
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              },
+              freshToken
+            );
+            clearCart();
+            setIsCartOpen(false);
+            setSuccessOrderId(orderId);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Payment verification failed");
+          }
+        },
         prefill: {
           email: user?.email,
           contact: address.phone,
@@ -233,7 +254,6 @@ export default function Checkout() {
       rzp.open();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not place order");
-    } finally {
       setSubmitting(false);
     }
   };

@@ -30,7 +30,7 @@ async function postPaymentFulfillment(order: any, userName: string | undefined, 
         },
         items: items.map((i: any) => ({
           name: i.name,
-          sku: i.productId,
+          sku: i.sku || i.name.slice(0, 40),
           units: i.quantity,
           sellingPrice: i.price,
         })),
@@ -116,6 +116,7 @@ router.post(
       return {
         productId: p.id,
         name: p.name,
+        sku: p.sku || p.name.slice(0, 40),
         price: p.price,
         quantity: i.quantity,
       };
@@ -214,8 +215,7 @@ router.post(
     });
     const body = Body.parse(req.body);
 
-    const ok =
-      config.useMocks || !integrations.razorpay || verifyRazorpaySignature(body);
+    const ok = config.useMocks ? true : (integrations.razorpay && verifyRazorpaySignature(body));
     if (!ok) throw new HttpError(400, "Invalid payment signature");
 
     // Find by razorpayOrderId (linear scan — fine for the small data we have)
@@ -235,12 +235,14 @@ router.post(
       razorpayPaymentId: body.razorpayPaymentId,
       razorpaySignature: body.razorpaySignature,
     });
-    await prisma.order.update({
-      where: { id: order.id },
+    const updateResult = await prisma.order.updateMany({
+      where: { id: order.id, status: "pending" },
       data: { status: "paid", payment: updatedPayment },
     });
 
-    void postPaymentFulfillment(order, req.user?.name, req.user?.email);
+    if (updateResult.count > 0) {
+      void postPaymentFulfillment(order, req.user?.name, req.user?.email).catch(e => console.error("[CRITICAL] postPaymentFulfillment unhandled:", e));
+    }
 
     res.json({ ok: true, orderId: order.id });
   }
@@ -254,11 +256,11 @@ router.post("/verify_redirect", async (req: Request, res: Response) => {
     return res.redirect(config.clientOrigin + "/checkout?error=InvalidPayment");
   }
 
-  const ok = config.useMocks || !integrations.razorpay || verifyRazorpaySignature({
+  const ok = config.useMocks ? true : (integrations.razorpay && verifyRazorpaySignature({
     razorpayOrderId: razorpay_order_id,
     razorpayPaymentId: razorpay_payment_id,
     razorpaySignature: razorpay_signature,
-  });
+  }));
   if (!ok) return res.redirect(config.clientOrigin + "/checkout?error=SignatureFailed");
 
   const allOrders = await prisma.order.findMany();
@@ -279,11 +281,13 @@ router.post("/verify_redirect", async (req: Request, res: Response) => {
       razorpayPaymentId: razorpay_payment_id,
       razorpaySignature: razorpay_signature,
     });
-    await prisma.order.update({
-      where: { id: order.id },
+    const updateResult = await prisma.order.updateMany({
+      where: { id: order.id, status: "pending" },
       data: { status: "paid", payment: updatedPayment },
     });
-    void postPaymentFulfillment(order, undefined, order.customerEmail || undefined);
+    if (updateResult.count > 0) {
+      void postPaymentFulfillment(order, undefined, order.customerEmail || undefined).catch(e => console.error("[CRITICAL] postPaymentFulfillment unhandled:", e));
+    }
   }
 
   // Redirect to success page and instruct frontend to clear the cart
@@ -315,11 +319,13 @@ router.post("/webhook/razorpay", async (req: Request, res: Response) => {
         }
       });
       if (order && order.status === "pending") {
-        await prisma.order.update({
-          where: { id: order.id },
+        const updateResult = await prisma.order.updateMany({
+          where: { id: order.id, status: "pending" },
           data: { status: "paid" },
         });
-        void postPaymentFulfillment(order, undefined, order.customerEmail || undefined);
+        if (updateResult.count > 0) {
+          void postPaymentFulfillment(order, undefined, order.customerEmail || undefined).catch(e => console.error("[CRITICAL] postPaymentFulfillment unhandled:", e));
+        }
       }
     }
   }
@@ -348,7 +354,7 @@ router.get(
   async (req: Request, res: Response) => {
     const order = await prisma.order.findUnique({ where: { id: String(req.params.id) } });
     if (!order) throw new HttpError(404, "Order not found");
-    const isOwner = order.userId === req.user!.id;
+    const isOwner = (order.userId === req.user!.id) || (order.customerEmail === req.userEmail);
     const isAdmin = req.user!.role === "admin";
     if (!isOwner && !isAdmin) throw new HttpError(403, "Forbidden");
     res.json({ order: deserializeOrder(order) });

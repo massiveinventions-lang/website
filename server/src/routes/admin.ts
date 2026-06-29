@@ -24,8 +24,12 @@ router.post("/login", (req: Request, res: Response) => {
   if (!config.adminEmails.includes(body.email)) {
     throw new HttpError(401, "Invalid credentials");
   }
-  const expected = process.env.ADMIN_PASSWORD ?? "admin";
-  if (body.password !== expected) {
+  const expected = process.env.ADMIN_PASSWORD;
+  if (process.env.NODE_ENV === "production" && !expected) {
+    throw new HttpError(500, "Admin login disabled: ADMIN_PASSWORD not configured on server.");
+  }
+  const validPassword = expected ?? "admin";
+  if (body.password !== validPassword) {
     throw new HttpError(401, "Invalid credentials");
   }
   const token = signAdminJwt(body.email);
