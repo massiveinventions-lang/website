@@ -212,7 +212,7 @@ function buildOrderEmailHtml(args: OrderConfirmationArgs): string {
           <tr>
             <td style="background:#faf8f5;padding:24px 32px;text-align:center;border-top:1px solid #f0ebe4;">
               <p style="margin:0;font-size:13px;color:#a89f91;line-height:1.5;">
-                Need help? Reply to this email.<br>
+                Need help? Contact us at massiveinventions@gmail.com.<br>
                 &copy; ${new Date().getFullYear()} Massive Inventions. All rights reserved.
               </p>
             </td>

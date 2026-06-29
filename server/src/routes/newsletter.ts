@@ -12,9 +12,25 @@ const SubscribeBody = z.object({
   source: z.string().trim().min(1).max(64).optional(),
 });
 
+const rateLimit = new Map<string, { count: number; expires: number }>();
+const MAX_REQUESTS = 5;
+const WINDOW_MS = 60 * 1000;
+
 // POST /api/newsletter/subscribe
 // Idempotent: re-subscribing the same email returns 200 with { alreadySubscribed: true }.
 router.post("/subscribe", async (req: Request, res: Response) => {
+  const ip = req.ip || req.connection.remoteAddress || "unknown";
+  const now = Date.now();
+  const record = rateLimit.get(ip);
+  if (record && record.expires > now) {
+    if (record.count >= MAX_REQUESTS) {
+      res.status(429).json({ error: "Too many requests. Please try again later." });
+      return;
+    }
+    record.count++;
+  } else {
+    rateLimit.set(ip, { count: 1, expires: now + WINDOW_MS });
+  }
   const body = SubscribeBody.parse(req.body);
 
   const existing = await prisma.newsletterSubscriber.findUnique({

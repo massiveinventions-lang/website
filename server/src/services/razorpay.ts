@@ -71,12 +71,7 @@ export function verifyRazorpaySignature(input: VerifyInput): boolean {
   return expected === input.razorpaySignature;
 }
 
-export function mockPaymentSignature(
-  razorpayOrderId: string,
-  razorpayPaymentId: string
-): string {
-  return `mock_sig_${razorpayOrderId}`;
-}
+
 
 export function verifyWebhookSignature(
   rawBody: string,

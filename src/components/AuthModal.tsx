@@ -35,7 +35,6 @@ export default function AuthModal({
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -117,6 +116,9 @@ export default function AuthModal({
         setCooldown(res.cooldownSeconds);
       } else {
         setCooldown(45); // default cooldown
+      }
+      if (res.devCode) {
+        setDevCode(res.devCode);
       }
       // Always show the production-style success message. The dev code
       // is still returned by the backend for local debugging (visible
@@ -357,6 +359,18 @@ export default function AuthModal({
                   <div className="flex items-start gap-2 p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800">
                     <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
                     <span>{error}</span>
+                  </div>
+                )}
+
+                {info && !error && (
+                  <div className="flex items-start gap-2 p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800">
+                    <span>{info}</span>
+                  </div>
+                )}
+
+                {devCode && (
+                  <div className="flex items-start gap-2 p-2.5 rounded-xl bg-yellow-50 border border-yellow-200 text-xs text-yellow-800 font-mono">
+                    <span>Dev mode active! Code is: {devCode}</span>
                   </div>
                 )}
 
