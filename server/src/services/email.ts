@@ -250,6 +250,6 @@ export async function sendOrderConfirmationEmail(args: OrderConfirmationArgs): P
   });
 
   if (error) {
-    console.error(\`[email] Failed to send order email: \${error.message}\`);
+    console.error(`[email] Failed to send order email: ${error.message}`);
   }
 }
