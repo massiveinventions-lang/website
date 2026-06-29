@@ -7,7 +7,7 @@ import { createRazorpayOrder, verifyRazorpaySignature, verifyWebhookSignature } 
 import { createAdhocOrder, assignAwb, buildTrackingUrl } from "../services/shiprocket";
 import { sendOrderConfirmationEmail } from "../services/email";
 
-async function postPaymentFulfillment(order: any, userName: string | undefined, userEmail: string | undefined) {
+export async function postPaymentFulfillment(order: any, userName: string | undefined, userEmail: string | undefined) {
   order.status = "paid"; // Ensure we are working with the updated status
   let awbCode: string | undefined;
   let trackUrl: string | undefined;
