@@ -109,7 +109,7 @@ export function useSession(): SessionState {
               name:
                 (data.session.user.user_metadata as { name?: string } | null)
                   ?.name ?? undefined,
-              role: "customer",
+              role: (data.session.user.user_metadata as { role?: string } | null)?.role === "admin" ? "admin" : "customer",
             }
           : null,
         loading: false,
@@ -126,7 +126,7 @@ export function useSession(): SessionState {
               name:
                 (session.user.user_metadata as { name?: string } | null)
                   ?.name ?? undefined,
-              role: "customer",
+              role: (session.user.user_metadata as { role?: string } | null)?.role === "admin" ? "admin" : "customer",
             }
           : null,
         loading: false,

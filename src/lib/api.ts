@@ -60,7 +60,7 @@ export interface ApiProduct {
 }
 
 export interface ApiOrder {
-  _id: string;
+  id: string;
   userId?: string;
   customerEmail?: string;
   items: {

@@ -82,13 +82,14 @@ export default function TrackOrder() {
       const fetchOrder = async () => {
         try {
           const token = await getAuthToken();
-          // if there's no token, we just fail silently and let them manually enter email
           if (token) {
             const res = await ordersApi.get(idFromUrl, token);
             setOrder(res.order as unknown as FoundOrder);
+          } else {
+            setError("Please log in or enter your email below to track this order.");
           }
         } catch (err) {
-          // Silent catch on auto-load
+          setError(err instanceof Error ? err.message : "Could not fetch order details. Please try manually.");
         } finally {
           setLoading(false);
         }
