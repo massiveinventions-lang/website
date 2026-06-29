@@ -103,7 +103,7 @@ async function main() {
   if (isDbReady()) {
     try {
       const count = await prisma.product.count();
-      if (count === 0) {
+      if (true) { // ALWAYS run sync to push codebase changes to live DB
         const { seedProducts } = await import("../prisma/products-data");
         for (const p of seedProducts) {
           const data = {
