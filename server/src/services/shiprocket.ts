@@ -159,6 +159,7 @@ export async function createAdhocOrder(input: CreateShipmentInput) {
           selling_price: i.sellingPrice,
         })),
         payment_method: input.paymentMethod,
+        sub_total: input.items.reduce((acc, i) => acc + (i.sellingPrice * i.units), 0),
         shipping_charges: input.shippingCharges ?? 0,
         giftwrap_charges: input.giftwrapCharges ?? 0,
         transaction_fee: input.transactionFee ?? 0,
