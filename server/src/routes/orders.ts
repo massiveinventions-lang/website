@@ -20,7 +20,7 @@ export async function postPaymentFulfillment(order: any, userName: string | unde
         orderId: order.id,
         orderDate: new Date().toISOString().slice(0, 16).replace('T', ' '),
         billing: {
-          name: userName ?? "Customer",
+          name: userName || "Customer",
           email: order.customerEmail ?? userEmail ?? "customer@example.com",
           phone: addr.phone,
           address: addr.line1 + (addr.line2 ? ", " + addr.line2 : ""),
@@ -55,6 +55,20 @@ export async function postPaymentFulfillment(order: any, userName: string | unde
       });
     } catch (err) {
       console.error("[shiprocket] create/assign failed:", err);
+      // Log the exact error to the database so we can debug without Render logs
+      try {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            shippingInfo: JSON.stringify({
+              error: err instanceof Error ? err.message : String(err),
+              time: new Date().toISOString()
+            })
+          }
+        });
+      } catch (dbErr) {
+        console.error("Failed to save shiprocket error to DB", dbErr);
+      }
     }
   }
 
