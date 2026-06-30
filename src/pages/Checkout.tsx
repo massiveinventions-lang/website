@@ -299,6 +299,20 @@ export default function Checkout() {
     );
   }
 
+  if (successOrderId) {
+    return (
+      <SuccessPage
+        orderId={successOrderId}
+        email={user.email}
+        onContinueShopping={() => {
+          clearCart();
+          setSuccessOrderId(null);
+          navigate("/");
+        }}
+      />
+    );
+  }
+
   // Empty-cart state — also inline, no redirect.
   if (items.length === 0) {
     return (
@@ -339,19 +353,6 @@ export default function Checkout() {
     );
   }
 
-  if (successOrderId) {
-    return (
-      <SuccessPage
-        orderId={successOrderId}
-        email={user.email}
-        onContinueShopping={() => {
-          clearCart();
-          setSuccessOrderId(null);
-          navigate("/");
-        }}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">

@@ -202,7 +202,7 @@ function buildOrderEmailHtml(args: OrderConfirmationArgs): string {
               </p>
               <div style="background:#FAF8F5;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
                 <p style="margin:0 0 8px 0;font-size:14px;color:${BRAND.textMuted};">Order ID</p>
-                <p style="margin:0 0 16px 0;font-size:16px;font-weight:600;">${args.orderId.split("-")[0].toUpperCase()}</p>
+                <p style="margin:0 0 16px 0;font-size:16px;font-weight:600;word-break:break-all;">${args.orderId}</p>
                 <p style="margin:0 0 8px 0;font-size:14px;color:${BRAND.textMuted};">Total Paid</p>
                 <p style="margin:0;font-size:18px;font-weight:700;color:${BRAND.primary};">₹${args.total.toLocaleString("en-IN")}</p>
               </div>

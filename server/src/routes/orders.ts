@@ -18,7 +18,7 @@ export async function postPaymentFulfillment(order: any, userName: string | unde
       const items = JSON.parse(order.items);
       const ship = await createAdhocOrder({
         orderId: order.id,
-        orderDate: new Date().toISOString(),
+        orderDate: new Date().toISOString().slice(0, 16).replace('T', ' '),
         billing: {
           name: userName ?? "Customer",
           email: order.customerEmail ?? userEmail ?? "customer@example.com",
