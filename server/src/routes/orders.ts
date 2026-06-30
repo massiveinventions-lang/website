@@ -422,4 +422,18 @@ function deserializeOrder(o: {
   };
 }
 
+// GET /api/orders/debug/:id
+// Temporary route to help debug Shiprocket failures in production without DB access
+router.get("/debug/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order) return res.status(404).send("Order not found");
+  res.json({
+    id: order.id,
+    shippingInfo: order.shippingInfo ? JSON.parse(order.shippingInfo) : null,
+    status: order.status,
+    customerEmail: order.customerEmail,
+  });
+});
+
 export default router;
