@@ -256,7 +256,11 @@ router.post(
     });
 
     if (updateResult.count > 0) {
-      void postPaymentFulfillment(order, req.user?.name, req.user?.email).catch(e => console.error("[CRITICAL] postPaymentFulfillment unhandled:", e));
+      try {
+        await postPaymentFulfillment(order, req.user?.name, req.user?.email);
+      } catch(e) {
+        console.error("[CRITICAL] postPaymentFulfillment unhandled:", e);
+      }
     }
 
     res.json({ ok: true, orderId: order.id });
@@ -301,7 +305,11 @@ router.post("/verify_redirect", async (req: Request, res: Response) => {
       data: { status: "paid", payment: updatedPayment },
     });
     if (updateResult.count > 0) {
-      void postPaymentFulfillment(order, undefined, order.customerEmail || undefined).catch(e => console.error("[CRITICAL] postPaymentFulfillment unhandled:", e));
+      try {
+        await postPaymentFulfillment(order, undefined, order.customerEmail || undefined);
+      } catch (e) {
+        console.error("[CRITICAL] postPaymentFulfillment unhandled:", e);
+      }
     }
   }
 
@@ -339,7 +347,11 @@ router.post("/webhook/razorpay", async (req: Request, res: Response) => {
           data: { status: "paid" },
         });
         if (updateResult.count > 0) {
-          void postPaymentFulfillment(order, undefined, order.customerEmail || undefined).catch(e => console.error("[CRITICAL] postPaymentFulfillment unhandled:", e));
+          try {
+            await postPaymentFulfillment(order, undefined, order.customerEmail || undefined);
+          } catch (e) {
+            console.error("[CRITICAL] postPaymentFulfillment unhandled:", e);
+          }
         }
       }
     }
