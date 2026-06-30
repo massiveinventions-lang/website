@@ -8,7 +8,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "npx prisma db push --accept-data-loss && prisma generate",
     "dev": "tsx watch src/index.ts",
     "build": "npx prisma generate",
     "start": "tsx src/index.ts",
