@@ -20,7 +20,7 @@ const SHIPPING_METHODS = [
     icon: Zap,
     name: "Standard Delivery",
     eta: "3–5 business days",
-    cost: "Free on orders above ₹499 · otherwise ₹49",
+    cost: "Free on all orders",
     desc: "Our most popular option. Tracked end-to-end with the country's best couriers.",
   },
   {

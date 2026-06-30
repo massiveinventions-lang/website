@@ -112,9 +112,8 @@ export default function Checkout() {
     return Object.keys(errs).length === 0;
   };
 
-  const freeShippingThreshold = 999;
-  const shippingCalc =
-    cartTotal === 0 ? 0 : cartTotal >= freeShippingThreshold ? 0 : 49;
+  const freeShippingThreshold = 0; // kept for legacy reference if needed elsewhere
+  const shippingCalc = 0;
   const total = cartTotal + shippingCalc;
 
   const handleSubmit = async (e: FormEvent) => {
@@ -644,7 +643,7 @@ function OrderSummary({
         {shipping === 0 && cartTotal > 0 && (
           <p className="text-xs text-green-700 flex items-center gap-1">
             <Tag className="w-3 h-3" />
-            Free shipping unlocked (orders ₹999+)
+            Free shipping applied
           </p>
         )}
         <div className="flex justify-between items-baseline pt-3 border-t border-[var(--foreground)]/8 mt-3">

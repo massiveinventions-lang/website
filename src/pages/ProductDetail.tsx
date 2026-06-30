@@ -345,7 +345,7 @@ export default function ProductDetail() {
               <div className="mt-6 flex items-center justify-center gap-6 text-xs text-[var(--foreground)]/40 border-t border-[var(--foreground)]/8 pt-5 flex-wrap">
                 <span className="flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5 text-green-500" />
-                  Free shipping above ₹499
+                  Free shipping on all orders
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5 text-green-500" />
