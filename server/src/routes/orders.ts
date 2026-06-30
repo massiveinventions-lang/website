@@ -436,4 +436,27 @@ router.get("/debug/:id", async (req: Request, res: Response) => {
   });
 });
 
+// GET /api/orders/retry/:id
+router.get("/retry/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order) return res.status(404).send("Order not found");
+  
+  try {
+    await postPaymentFulfillment(order, undefined, order.customerEmail || undefined);
+    
+    // Fetch it again to see the updated shippingInfo
+    const updated = await prisma.order.findUnique({ where: { id } });
+    res.json({
+      success: true,
+      shippingInfo: updated?.shippingInfo ? JSON.parse(updated.shippingInfo) : null,
+    });
+  } catch (err) {
+    res.json({
+      success: false,
+      error: err instanceof Error ? err.message : String(err)
+    });
+  }
+});
+
 export default router;
