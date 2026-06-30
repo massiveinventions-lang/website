@@ -139,8 +139,8 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
-            Smart Sound, <br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-brown)] to-[var(--retro-brown)]">Beautifully Crafted</span>
+            Modern Sound, <br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-brown)] to-[var(--retro-brown)]">Vintage Soul</span>
           </motion.h1>
           
           <motion.p
