@@ -6,53 +6,40 @@ declare global {
   var __prisma: PrismaClient | undefined;
 }
 
-let _client: PrismaClient | null = null;
+const client =
+  globalThis.__prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === "production" ? ["error"] : ["error", "warn"],
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalThis.__prisma = client;
+}
+
 let _initialised = false;
 
 export async function connectDB(): Promise<void> {
   if (_initialised) return;
   await resolveDatabaseUrl();
-  if (!process.env.DATABASE_URL) {
-    console.error("[db] DATABASE_URL not set. Endpoints needing DB will return 503.");
-    return;
-  }
-  _client =
-    globalThis.__prisma ??
-    new PrismaClient({
-      log:
-        process.env.NODE_ENV === "production"
-          ? ["error"]
-          : ["error", "warn"],
-    });
-  globalThis.__prisma = _client;
   try {
-    await _client.$connect();
+    await client.$connect();
     console.log("[db] Prisma connected");
+    _initialised = true;
   } catch (err) {
     console.error("[db] Prisma connect failed:", err);
-    throw err;
   }
-  _initialised = true;
 }
 
 export function isDbReady(): boolean {
-  return Boolean(_client);
+  return _initialised;
 }
 
 export function getPrisma(): PrismaClient {
-  if (!_client) throw new Error("Prisma not initialised");
-  return _client;
+  return client;
 }
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, prop) {
-    if (!_client) {
-      throw new Error("Prisma client accessed before connectDB()");
-    }
-    return Reflect.get(_client, prop);
-  },
-});
+export const prisma = client;
 
 export async function disconnectDB(): Promise<void> {
-  if (_client) await _client.$disconnect();
+  await client.$disconnect();
 }
