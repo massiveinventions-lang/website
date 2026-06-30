@@ -126,7 +126,7 @@ router.post(
       (sum, i) => sum + i.price * i.quantity,
       0
     );
-    const shipping = subtotal >= 999 ? 0 : 49;
+    const shipping = 0;
     const total = subtotal + shipping;
 
     // Ensure the user actually exists in the DB before linking the foreign key.
