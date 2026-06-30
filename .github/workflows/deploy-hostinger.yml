@@ -50,6 +50,5 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/public/
           server-dir: public_html/
-          dangerous-clean-slate: true
           log-level: verbose
           timeout: 120000
