@@ -91,23 +91,20 @@ export function createApp() {
   return app;
 }
 
-async function main() {
-  // Set DATABASE_URL (start embedded postgres if needed) BEFORE any
-  // Prisma client is constructed.
-  await resolveDatabaseUrl();
+const app = createApp();
 
-  // Connect Prisma + push schema
-  await connectDB();
-
-  // Auto-seed products if the table is empty
-  if (isDbReady()) {
-    try {
+async function bootDb() {
+  try {
+    await resolveDatabaseUrl();
+    await connectDB();
+    // Auto-seed products if the table is empty
+    if (isDbReady()) {
       const count = await prisma.product.count();
-      if (count === 0 || process.env.FORCE_SEED === "true") { // Only seed if empty or forced
+      if (count === 0 || process.env.FORCE_SEED === "true") {
         const { seedProducts } = await import("../prisma/products-data");
         for (const p of seedProducts) {
           const data = {
-            id: crypto.randomUUID(),
+            id: require("crypto").randomUUID(),
             name: p.name,
             price: p.price,
             originalPrice: p.originalPrice ?? null,
@@ -128,38 +125,27 @@ async function main() {
             sku: p.sku ?? null,
           };
           if (p.sku) {
-            await prisma.product.upsert({
-              where: { sku: p.sku },
-              update: data,
-              create: data,
-            });
+            await prisma.product.upsert({ where: { sku: p.sku }, update: data, create: data });
           } else {
             await prisma.product.create({ data });
           }
         }
         console.log(`[boot] seeded ${seedProducts.length} products`);
       }
-    } catch (err) {
-      console.error("[boot] seed failed:", err);
     }
+  } catch (err) {
+    console.error("[boot] seed failed:", err);
   }
+}
 
-  const app = createApp();
+// Start DB connection process in the background
+bootDb();
+
+if (require.main === module || process.env.NODE_ENV !== "production") {
   app.listen(config.port, () => {
-    console.log(
-      `[server] listening on http://localhost:${config.port}  (env: ${config.nodeEnv})`
-    );
-    if (config.useMocks) {
-      console.log(
-        "[server] MOCK MODE: mock Razorpay, mock Shiprocket, dev-only auth"
-      );
-    }
+    console.log(`[server] listening on http://localhost:${config.port}  (env: ${config.nodeEnv})`);
   });
 }
 
-if (require.main === module) {
-  main().catch((err) => {
-    console.error("[fatal]", err);
-    process.exit(1);
-  });
-}
+// Export for Vercel Serverless
+export default app;
