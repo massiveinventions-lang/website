@@ -14,6 +14,7 @@ import adminRouter from "./routes/admin";
 import newsletterRouter from "./routes/newsletter";
 import authRouter from "./routes/auth";
 import replacementRequestsRouter from "./routes/replacementRequests";
+import testSrRouter from "./routes/test-sr";
 
 export function createApp() {
   const app = express();
@@ -82,6 +83,7 @@ export function createApp() {
   app.use("/api/newsletter", newsletterRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/replacement-requests", replacementRequestsRouter);
+  app.use("/api/test-sr", testSrRouter);
 
   app.use(notFound);
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) =>
