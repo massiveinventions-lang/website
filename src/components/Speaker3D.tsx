@@ -182,11 +182,12 @@ export default function Speaker3D() {
         {webglSupported ? (
           <Suspense fallback={<LoadingSpinner />}>
             <Canvas
-              shadows
+              dpr={[1, 1.5]}
+              performance={{ min: 0.5 }}
               camera={{ position: [0, 0, 7], fov: 42 }}
               style={{ width: "100%", height: "100%" }}
             >
-              <spotLight position={[-4, 7, 5]} angle={0.22} penumbra={0.8} intensity={3.5} castShadow color="#FFE0A0" />
+              <spotLight position={[-4, 7, 5]} angle={0.22} penumbra={0.8} intensity={3.5} color="#FFE0A0" />
               <spotLight position={[5, 3, 4]}  angle={0.3}  penumbra={1}   intensity={1.8} color="#FFD090" />
               <pointLight position={[4, -1, -3]} intensity={1.2} color="#C8922A" />
               <ambientLight intensity={0.9} color="#FFF4E0" />

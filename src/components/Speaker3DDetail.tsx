@@ -137,7 +137,7 @@ function SpeakerAssembly() {
 
   return (
     <group>
-      <RoundedBox args={[3.6, 2.2, 2.4]} radius={0.28} smoothness={6} castShadow receiveShadow>
+      <RoundedBox args={[3.6, 2.2, 2.4]} radius={0.28} smoothness={6}>
         <primitive object={woodMat} attach="material" />
       </RoundedBox>
       <mesh position={[0, -0.05, 1.202]}>
@@ -146,7 +146,7 @@ function SpeakerAssembly() {
       </mesh>
       <SpeakerCone x={-0.88} />
       <SpeakerCone x={0.88} />
-      <mesh position={[0, 1.1, 0]} receiveShadow>
+      <mesh position={[0, 1.1, 0]}>
         <boxGeometry args={[3.54, 0.02, 2.34]} />
         <meshStandardMaterial map={woodTex} roughness={0.08} metalness={0.08} color="#8B5E30" />
       </mesh>
@@ -254,11 +254,12 @@ export default function Speaker3DDetail() {
             </div>
           }>
             <Canvas
-              shadows
+              dpr={[1, 1.5]}
+              performance={{ min: 0.5 }}
               camera={{ position: [0, 0.4, 6.5], fov: 40 }}
               style={{ width: "100%", height: "100%", cursor: "grab" }}
             >
-              <spotLight position={[-4, 7, 5]} angle={0.22} penumbra={0.8} intensity={3.5} castShadow color="#FFE0A0" />
+              <spotLight position={[-4, 7, 5]} angle={0.22} penumbra={0.8} intensity={3.5} color="#FFE0A0" />
               <spotLight position={[5, 3, 4]}  angle={0.3}  penumbra={1}   intensity={1.8} color="#FFD090" />
               <pointLight position={[4, -1, -3]} intensity={1.2} color="#C8922A" />
               <ambientLight intensity={0.55} color="#FFF4E0" />
@@ -266,7 +267,7 @@ export default function Speaker3DDetail() {
 
               <AutoRotateScene isUserInteracting={isUserInteracting} />
 
-              <ContactShadows position={[0, -1.5, 0]} opacity={0.5} scale={12} blur={3.5} far={5} color="#4A2808" />
+              <ContactShadows position={[0, -1.5, 0]} opacity={0.5} scale={12} blur={3.5} far={5} resolution={256} frames={1} color="#4A2808" />
 
               <OrbitControls
                 enablePan={false}
