@@ -12,7 +12,7 @@ async function auth(): Promise<string> {
     );
   }
   const fs = require("fs");
-  const tokenPath = require("path").join(process.cwd(), ".shiprocket_token");
+  const tokenPath = require("path").join(require("os").tmpdir(), ".shiprocket_token");
   
   if (!_token) {
     try {
