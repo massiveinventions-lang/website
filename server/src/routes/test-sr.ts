@@ -5,7 +5,6 @@ const router = Router();
 
 router.get('/', async (req, res) => {
   try {
-    const fetch = (await import('node-fetch')).default || global.fetch;
     const response = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'User-Agent': req.query.ua ? String(req.query.ua) : 'node-fetch' },
