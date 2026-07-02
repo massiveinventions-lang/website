@@ -56,6 +56,13 @@ model Product {
   longDescription String?
   inStock         Boolean  @default(true)
   stock           Int      @default(100)
+  // Shipping dimensions (used for Shiprocket). Defaults are sane
+  // for a small product so the order flow works even before
+  // backfilling per-product values. Edit via the admin panel.
+  weightGrams     Int      @default(500)
+  lengthCm        Int      @default(20)
+  breadthCm       Int      @default(15)
+  heightCm        Int      @default(15)
   specs           String   @default("[]")
   features        String   @default("[]")
   colors          String   @default("[]")

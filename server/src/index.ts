@@ -121,6 +121,12 @@ async function bootDb() {
             longDescription: p.longDescription ?? null,
             inStock: p.inStock ?? true,
             stock: p.stock ?? 100,
+            // Shipping dimensions — defaults match the schema. Edit per
+            // product in the admin panel once it's deployed.
+            weightGrams: p.weightGrams ?? 500,
+            lengthCm: p.lengthCm ?? 20,
+            breadthCm: p.breadthCm ?? 15,
+            heightCm: p.heightCm ?? 15,
             specs: JSON.stringify(p.specs ?? []),
             features: JSON.stringify(p.features ?? []),
             colors: JSON.stringify(p.colors ?? []),

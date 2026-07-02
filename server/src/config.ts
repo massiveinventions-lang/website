@@ -41,7 +41,12 @@ export const config = {
   shiprocket: {
     email: required("SHIPROCKET_EMAIL"),
     password: required("SHIPROCKET_PASSWORD"),
-    pickupLocation: process.env.SHIPROCKET_PICKUP_LOCATION ?? "Home",
+    pickupLocation: process.env.SHIPROCKET_PICKUP_LOCATION || "Home",
+    // Optional sales-channel id. Shiprocket's API rejects an empty
+    // channel_id on many accounts, so set this if your account has
+    // any custom sales channels. Find yours via GET /api/test-sr
+    // (it returns the channel list under `channels.sample`).
+    channelId: process.env.SHIPROCKET_CHANNEL_ID || "",
   },
 };
 

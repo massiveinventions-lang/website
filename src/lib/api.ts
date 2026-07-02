@@ -13,8 +13,19 @@
 
 import { getAuthToken } from "./supabase";
 
+// Resolve the backend URL from (in order):
+//   1. window.__APP_CONFIG__.apiUrl — set at runtime by /public/config.js,
+//      so the same static build can point at any backend without rebuild.
+//   2. import.meta.env.VITE_API_URL — build-time fallback for env-based
+//      deploys (e.g. Vercel env var when not using the runtime config file).
+//   3. Empty string — fall back to relative /api/* which the Vite dev
+//      proxy (or future reverse proxy) will handle.
 const RAW_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+  (typeof window !== "undefined" &&
+    (window as unknown as { __APP_CONFIG__?: { apiUrl?: string } })
+      .__APP_CONFIG__?.apiUrl) ||
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  "";
 
 export const API_BASE = RAW_BASE.replace(/\/+$/, "");
 

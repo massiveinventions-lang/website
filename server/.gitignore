@@ -4,3 +4,16 @@ dist
 .env.local
 .DS_Store
 *.log
+
+# SQLite dev database — never commit (it can contain real customer
+# data from local testing).
+prisma/dev.db*
+prisma/dev.db-journal
+
+# Shiprocket / API token caches
+.shiprocket_token
+*.token
+
+# One-off debug scripts (kept on disk for the developer but never
+# deployed). Use `npm run dev-debug` from server/ to see what's here.
+scripts/dev-debug/

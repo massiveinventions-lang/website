@@ -14,5 +14,5 @@
 // Razorpay keys stay server-side.
 
 window.__APP_CONFIG__ = {
-  apiUrl: "https://massive-inventions-api3.onrender.com",
+  apiUrl: "https://massive-inventions-api.vercel.app",
 };

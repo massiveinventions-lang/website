@@ -22,6 +22,12 @@ export type SeedProduct = {
   longDescription: string;
   inStock: boolean;
   stock: number;
+  // Shipping dimensions (used by Shiprocket). Edit per product in the
+  // admin panel after deploy if these defaults don't match reality.
+  weightGrams?: number;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
   specs: Spec[];
   features: string[];
   colors: Color[];

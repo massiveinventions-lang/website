@@ -4,6 +4,26 @@ const BASE = "https://apiv2.shiprocket.in/v1/external";
 
 let _token: { value: string; expiresAt: number } | null = null;
 
+// Shiprocket's API sits behind Cloudflare, which blocks Vercel
+// serverless IPs with HTTP 403 "Access forbidden" unless the request
+// looks like a real browser. The full set of browser-like headers
+// (Accept, Accept-Language, Accept-Encoding, Origin, Referer) is
+// required. Without them, every auth call fails with 403 and orders
+// never reach Shiprocket.
+//
+// If you ever see `Shiprocket auth failed: 403` or
+// `Shiprocket /orders/create/adhoc failed: 403`, re-check this list.
+const BROWSER_HEADERS = {
+  "Content-Type": "application/json",
+  Accept: "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
+  "Accept-Encoding": "gzip, deflate, br",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Origin: "https://app.shiprocket.in",
+  Referer: "https://app.shiprocket.in/",
+};
+
 async function auth(): Promise<string> {
   if (config.useMocks) return "mock_token";
   if (!integrations.shiprocket) {
@@ -13,7 +33,7 @@ async function auth(): Promise<string> {
   }
   const fs = require("fs");
   const tokenPath = require("path").join(require("os").tmpdir(), ".shiprocket_token");
-  
+
   if (!_token) {
     try {
       const cached = JSON.parse(fs.readFileSync(tokenPath, "utf8"));
@@ -29,10 +49,7 @@ async function auth(): Promise<string> {
 
   const res = await fetch(`${BASE}/auth/login`, {
     method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    },
+    headers: { ...BROWSER_HEADERS },
     body: JSON.stringify({
       email: config.shiprocket.email,
       password: config.shiprocket.password,
@@ -48,7 +65,7 @@ async function auth(): Promise<string> {
     value: data.token,
     expiresAt: Date.now() + 9 * 24 * 60 * 60 * 1000,
   };
-  
+
   try {
     fs.writeFileSync(tokenPath, JSON.stringify(_token));
   } catch (e) {
@@ -100,8 +117,7 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      ...BROWSER_HEADERS,
       Authorization: `Bearer ${token}`,
       ...(init.headers ?? {}),
     },
@@ -130,6 +146,13 @@ export interface CreateShipmentInput {
     sku: string;
     units: number;
     sellingPrice: number;
+    // Per-item shipping dimensions. Defaults are applied if a product
+    // is missing any value; the caller should pull these from the
+    // Product model so they match the actual product.
+    weightGrams?: number;
+    lengthCm?: number;
+    breadthCm?: number;
+    heightCm?: number;
   }[];
   paymentMethod: "COD" | "Prepaid";
   shippingCharges?: number;
@@ -138,6 +161,28 @@ export interface CreateShipmentInput {
 }
 
 export async function createAdhocOrder(input: CreateShipmentInput) {
+  // Aggregate the package dimensions from the items. We use the LARGEST
+  // item's dimensions for length/breadth/height (parcel shape) and SUM
+  // the weights — this is the standard way to compute a multi-item
+  // package and is what Shiprocket's courier allocation expects.
+  let totalWeightKg = 0;
+  let maxLength = 0;
+  let maxBreadth = 0;
+  let maxHeight = 0;
+  for (const it of input.items) {
+    const w = (it.weightGrams ?? 500) * it.units; // grams → grams
+    totalWeightKg += w / 1000;
+    if ((it.lengthCm ?? 0) > maxLength) maxLength = it.lengthCm ?? 0;
+    if ((it.breadthCm ?? 0) > maxBreadth) maxBreadth = it.breadthCm ?? 0;
+    if ((it.heightCm ?? 0) > maxHeight) maxHeight = it.heightCm ?? 0;
+  }
+  // Shiprocket's minimums — they reject packages under 0.5kg or 10cm
+  // in any dimension even though the items are smaller.
+  if (totalWeightKg < 0.5) totalWeightKg = 0.5;
+  if (maxLength < 10) maxLength = 10;
+  if (maxBreadth < 10) maxBreadth = 10;
+  if (maxHeight < 10) maxHeight = 10;
+
   return call<{ order_id: number; shipment_id: number; status: string }>(
     "/orders/create/adhoc",
     {
@@ -145,6 +190,11 @@ export async function createAdhocOrder(input: CreateShipmentInput) {
       body: JSON.stringify({
         order_id: input.orderId,
         order_date: input.orderDate,
+        // Shiprocket's API rejects an empty channel_id on some accounts.
+        // If you haven't set up a sales channel in Shiprocket, you can
+        // find one by hitting GET /api/test-sr (it returns the channel
+        // list). Then set SHIPROCKET_CHANNEL_ID in your env and the
+        // orders route will pass it via the `channelId` arg.
         channel_id: input.channelId ?? "",
         billing_customer_name: input.billing.name,
         billing_last_name: "Customer", // mandatory fallback
@@ -168,10 +218,11 @@ export async function createAdhocOrder(input: CreateShipmentInput) {
         giftwrap_charges: input.giftwrapCharges ?? 0,
         transaction_fee: input.transactionFee ?? 0,
         pickup_location: config.shiprocket.pickupLocation,
-        length: 10,
-        breadth: 10,
-        height: 10,
-        weight: 0.5,
+        // Aggregated from items above — no more hardcoded 0.5kg.
+        length: maxLength,
+        breadth: maxBreadth,
+        height: maxHeight,
+        weight: totalWeightKg,
       }),
     }
   );

@@ -92,8 +92,12 @@ export default function AuthModal({
     }
   }, [open]);
 
-  // If user is already signed in, close immediately
-  if (user && open) onClose();
+  // If the user is already signed in while the modal is open, close it.
+  // MUST be in an effect — calling onClose() during render is a parent
+  // state update during child render, which React 19 rejects.
+  useEffect(() => {
+    if (user && open) onClose();
+  }, [user, open, onClose]);
 
   const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 

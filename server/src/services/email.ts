@@ -158,7 +158,12 @@ interface OrderConfirmationArgs {
 }
 
 function buildOrderEmailHtml(args: OrderConfirmationArgs): string {
-  const trackButton = args.trackingUrl 
+  // Two variants: one with a tracking button (when we have an AWB) and
+  // a fallback that tells the customer to expect a follow-up email.
+  // Showing a button that links to `undefined` is much worse than a
+  // clear "we'll email you shortly" message.
+  const hasTracking = Boolean(args.trackingUrl && args.awb);
+  const trackButton = hasTracking
     ? `
       <tr>
         <td align="center" style="padding-top:24px;">
@@ -170,7 +175,9 @@ function buildOrderEmailHtml(args: OrderConfirmationArgs): string {
     : `
       <tr>
         <td align="center" style="padding-top:24px;">
-          <p style="margin-top:16px;font-size:14px;color:${BRAND.textMuted};">Your tracking details will be updated shortly.</p>
+          <div style="display:inline-block;padding:14px 24px;background-color:#f0ebe4;border:1px dashed ${BRAND.primary};color:${BRAND.textMuted};font-size:14px;border-radius:8px;">
+            📦 Your tracking ID will be emailed as soon as your order is dispatched (usually within 24 hours).
+          </div>
         </td>
       </tr>
     `;

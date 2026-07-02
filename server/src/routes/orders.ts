@@ -11,14 +11,33 @@ export async function postPaymentFulfillment(order: any, userName: string | unde
   order.status = "paid"; // Ensure we are working with the updated status
   let awbCode: string | undefined;
   let trackUrl: string | undefined;
+  let shiprocketOrderId: string | undefined;
 
   if (integrations.shiprocket || config.useMocks) {
+    // ---- Stage 1: create the Shiprocket order (always) ----
     try {
       const addr = JSON.parse(order.shippingAddress);
       const items = JSON.parse(order.items);
+      // Pull weight/dimensions from the Product model so Shiprocket
+      // gets accurate package data. Falls back to schema defaults
+      // (see prisma/schema.prisma) if any product row is missing them.
+      const productIds = items.map((i: { productId: string }) => i.productId);
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: {
+          id: true,
+          weightGrams: true,
+          lengthCm: true,
+          breadthCm: true,
+          heightCm: true,
+        },
+      });
+      const dimById = new Map(products.map((p) => [p.id, p]));
+
       const ship = await createAdhocOrder({
         orderId: order.id,
         orderDate: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        channelId: config.shiprocket.channelId || undefined,
         billing: {
           name: userName || "Customer",
           email: order.customerEmail ?? userEmail ?? "customer@example.com",
@@ -29,42 +48,81 @@ export async function postPaymentFulfillment(order: any, userName: string | unde
           country: addr.country ?? "India",
           pincode: addr.pincode,
         },
-        items: items.map((i: any) => ({
-          name: i.name,
-          sku: i.sku || i.name.slice(0, 40),
-          units: i.quantity,
-          sellingPrice: i.price,
-        })),
+        items: items.map((i: any) => {
+          const dims = dimById.get(i.productId);
+          return {
+            name: i.name,
+            sku: i.sku || i.name.slice(0, 40),
+            units: i.quantity,
+            sellingPrice: i.price,
+            weightGrams: dims?.weightGrams,
+            lengthCm: dims?.lengthCm,
+            breadthCm: dims?.breadthCm,
+            heightCm: dims?.heightCm,
+          };
+        }),
         paymentMethod: "Prepaid",
       });
-      const awb = await assignAwb(ship.shipment_id);
-      awbCode = awb.awb_code;
-      trackUrl = buildTrackingUrl(awb.awb_code);
+      shiprocketOrderId = String(ship.order_id);
 
+      // Save the shiprocket order ID immediately, even if assignAwb
+      // fails below — this lets the admin retry without losing track
+      // of the order in Shiprocket's dashboard.
       await prisma.order.update({
         where: { id: order.id },
         data: {
-          status: "shipped",
-          shippingInfo: JSON.stringify({
-            shiprocketOrderId: String(ship.order_id),
-            awb: awbCode,
-            courier: awb.courier_name,
-            trackingUrl: trackUrl,
-          }),
+          shippingInfo: JSON.stringify({ shiprocketOrderId }),
         },
       });
+
+      // ---- Stage 2: assign a courier AWB ----
+      try {
+        const awb = await assignAwb(ship.shipment_id);
+        awbCode = awb.awb_code;
+        trackUrl = buildTrackingUrl(awb.awb_code);
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: "shipped",
+            shippingInfo: JSON.stringify({
+              shiprocketOrderId,
+              awb: awbCode,
+              courier: awb.courier_name,
+              trackingUrl: trackUrl,
+            }),
+          },
+        });
+      } catch (err) {
+        // AWB assignment failed but the Shiprocket order exists.
+        // Leave status as "paid" and surface the error so the admin
+        // can retry from /api/orders/retry/:id without recreating
+        // the Shiprocket order.
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            shippingInfo: JSON.stringify({
+              shiprocketOrderId,
+              error: `Order created in Shiprocket (#${shiprocketOrderId}) but courier assignment failed: ${err instanceof Error ? err.message : String(err)}`,
+              time: new Date().toISOString(),
+            }),
+          },
+        });
+        console.error("[shiprocket] assignAwb failed (order still exists in SR):", err);
+      }
     } catch (err) {
-      console.error("[shiprocket] create/assign failed:", err);
-      // Log the exact error to the database so we can debug without Render logs
+      // The whole Shiprocket flow failed (likely an invalid pickup
+      // location name, bad credentials, or bad address). Persist the
+      // error to the order so we can debug without server logs.
+      console.error("[shiprocket] create failed:", err);
       try {
         await prisma.order.update({
           where: { id: order.id },
           data: {
             shippingInfo: JSON.stringify({
               error: err instanceof Error ? err.message : String(err),
-              time: new Date().toISOString()
-            })
-          }
+              time: new Date().toISOString(),
+            }),
+          },
         });
       } catch (dbErr) {
         console.error("Failed to save shiprocket error to DB", dbErr);
@@ -72,7 +130,9 @@ export async function postPaymentFulfillment(order: any, userName: string | unde
     }
   }
 
-  // Always send confirmation email, even if Shiprocket fails
+  // Always send confirmation email, even if Shiprocket fails. The
+  // email template handles the missing-AWB case (shows a "we'll email
+  // you tracking shortly" message instead of a broken link).
   try {
     const emailTo = order.customerEmail ?? userEmail;
     if (emailTo) {

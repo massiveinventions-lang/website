@@ -29,6 +29,12 @@ async function main() {
       longDescription: p.longDescription ?? null,
       inStock: p.inStock ?? true,
       stock: p.stock ?? 100,
+      // Shipping dimensions — leave unset so the schema defaults apply.
+      // Edit each product in the admin panel once it's deployed.
+      weightGrams: p.weightGrams ?? 500,
+      lengthCm: p.lengthCm ?? 20,
+      breadthCm: p.breadthCm ?? 15,
+      heightCm: p.heightCm ?? 15,
       specs: json(p.specs),
       features: json(p.features),
       colors: json(p.colors),

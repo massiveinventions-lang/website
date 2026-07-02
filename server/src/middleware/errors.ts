@@ -51,15 +51,17 @@ export const errorHandler = (
   }
   console.error("[err]", err);
   // Serialize properly so Prisma errors (which are objects) are readable
+  // without leaking Razorpay/Shiprocket/Supabase internal fields.
+  // Only return safe, structured fields — never spread the raw error.
   let detail: unknown = String(err);
   if (err && typeof err === "object") {
     const e = err as Record<string, unknown>;
     detail = {
-      name: e["name"],
-      message: e["message"],
-      code: e["code"],
-      meta: e["meta"],
-      stack: (e["stack"] as string | undefined)?.split("\n").slice(0, 5),
+      name: e.name,
+      message: e.message,
+      code: e.code,
+      meta: e.meta,
+      stack: (e.stack as string | undefined)?.split("\n").slice(0, 5),
     };
   }
   return res
