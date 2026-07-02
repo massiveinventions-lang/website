@@ -15,6 +15,7 @@ import newsletterRouter from "./routes/newsletter";
 import authRouter from "./routes/auth";
 import replacementRequestsRouter from "./routes/replacementRequests";
 import testSrRouter from "./routes/test-sr";
+import migrateDbRouter from "./routes/migrate-db";
 
 export function createApp() {
   const app = express();
@@ -84,6 +85,7 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/replacement-requests", replacementRequestsRouter);
   app.use("/api/test-sr", testSrRouter);
+  app.use("/api/admin/migrate-db", migrateDbRouter);
 
   app.use(notFound);
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) =>
