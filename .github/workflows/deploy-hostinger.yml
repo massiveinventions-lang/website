@@ -48,7 +48,18 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          # Hostinger uses plain FTP (port 21). Do NOT use FTPS unless
+          # the account explicitly requires TLS.
+          protocol: ftp
+          # Don't wipe the destination before each deploy — Hostinger
+          # rate-limits FTP commands and `dangerous-clean-slate` can
+          # exceed that limit on a large upload.
+          dangerous-clean-slate: false
           local-dir: ./dist/public/
           server-dir: public_html/
           log-level: verbose
           timeout: 120000
+          # Limit concurrent connections to stay under Hostinger's
+          # per-IP rate limit.
+          max-retries: 5
+          retry-delay: 5000
