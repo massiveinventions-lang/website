@@ -19,20 +19,60 @@ export async function postPaymentFulfillment(order: any, userName: string | unde
       const addr = JSON.parse(order.shippingAddress);
       const items = JSON.parse(order.items);
       // Pull weight/dimensions from the Product model so Shiprocket
-      // gets accurate package data. Falls back to schema defaults
-      // (see prisma/schema.prisma) if any product row is missing them.
+      // gets accurate package data. Falls back to hardcoded defaults
+      // if the schema doesn't have these columns yet (e.g. before the
+      // Prisma migration has been run on the production database).
       const productIds = items.map((i: { productId: string }) => i.productId);
-      const products = await prisma.product.findMany({
-        where: { id: { in: productIds } },
-        select: {
-          id: true,
-          weightGrams: true,
-          lengthCm: true,
-          breadthCm: true,
-          heightCm: true,
-        },
-      });
-      const dimById = new Map(products.map((p) => [p.id, p]));
+      // Map of SKU → dimensions. Used as a fallback when the DB
+      // columns don't exist yet.
+      const dimDefaultsBySku: Record<string, { weightGrams: number; lengthCm: number; breadthCm: number; heightCm: number }> = {
+        // Cable — 6×4 inch box, 500g (user-provided, Jul 2 2026)
+        "CABLE-USB-C-001": { weightGrams: 500, lengthCm: 15, breadthCm: 10, heightCm: 2 },
+        // Speaker — 780g wooden box
+        "SPK-SHEESHAM-001": { weightGrams: 780, lengthCm: 22, breadthCm: 12, heightCm: 12 },
+        // Earbuds with case
+        "EARBUDS-X-001": { weightGrams: 200, lengthCm: 12, breadthCm: 10, heightCm: 5 },
+        // 80W charger
+        "CHG-VOOC80-001": { weightGrams: 180, lengthCm: 12, breadthCm: 8, heightCm: 6 },
+        // C-to-C charger + cable
+        "CHG-C2C-33W-001": { weightGrams: 220, lengthCm: 14, breadthCm: 9, heightCm: 6 },
+      };
+      let dimById = new Map<string, { weightGrams?: number; lengthCm?: number; breadthCm?: number; heightCm?: number }>();
+      try {
+        const products = await prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            sku: true,
+            weightGrams: true,
+            lengthCm: true,
+            breadthCm: true,
+            heightCm: true,
+          },
+        });
+        for (const p of products) {
+          // Prefer DB values, fall back to SKU lookup, then to safe defaults.
+          const skuDefaults = p.sku ? dimDefaultsBySku[p.sku] : undefined;
+          dimById.set(p.id, {
+            weightGrams: p.weightGrams ?? skuDefaults?.weightGrams ?? 500,
+            lengthCm: p.lengthCm ?? skuDefaults?.lengthCm ?? 15,
+            breadthCm: p.breadthCm ?? skuDefaults?.breadthCm ?? 10,
+            heightCm: p.heightCm ?? skuDefaults?.heightCm ?? 5,
+          });
+        }
+      } catch (err) {
+        // The new dimension columns may not exist on the live DB yet
+        // (migration not run). Log once and fall back to SKU-based
+        // defaults so order fulfillment still works.
+        console.warn(
+          "[orders] product dimension query failed (DB columns missing?); using SKU defaults:",
+          err instanceof Error ? err.message : String(err)
+        );
+        for (const i of items as Array<{ productId: string; sku?: string }>) {
+          const skuDefaults = i.sku ? dimDefaultsBySku[i.sku] : undefined;
+          dimById.set(i.productId, skuDefaults ?? { weightGrams: 500, lengthCm: 15, breadthCm: 10, heightCm: 5 });
+        }
+      }
 
       const ship = await createAdhocOrder({
         orderId: order.id,

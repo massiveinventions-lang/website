@@ -106,22 +106,115 @@ router.get("/", async (req: Request, res: Response) => {
     where.name = { contains: q, mode: "insensitive" };
   }
 
-  const products = await prisma.product.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    skip: Number(skip ?? 0),
-    take: Math.min(Number(limit ?? 100), 200),
-  });
+  // Explicitly list the columns we want. The shipping-dimension
+  // columns (weightGrams, lengthCm, breadthCm, heightCm) are optional
+  // in the `select` so a database that hasn't been migrated yet
+  // (the new columns don't exist) still returns the rest of the
+  // product data without throwing a 500. If Prisma can't resolve
+  // a column it'll throw — fall back to the no-select query.
+  let products;
+  try {
+    products = await prisma.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: Number(skip ?? 0),
+      take: Math.min(Number(limit ?? 100), 200),
+    });
+  } catch (err) {
+    // Likely a missing column from a pending migration. Re-try with
+    // an explicit list of the columns that DO exist on every DB.
+    console.warn(
+      "[products] full findMany failed, retrying with safe column list:",
+      err instanceof Error ? err.message : String(err)
+    );
+    products = await prisma.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: Number(skip ?? 0),
+      take: Math.min(Number(limit ?? 100), 200),
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        originalPrice: true,
+        rating: true,
+        reviews: true,
+        category: true,
+        badge: true,
+        image: true,
+        hoverImage: true,
+        images: true,
+        description: true,
+        longDescription: true,
+        inStock: true,
+        stock: true,
+        specs: true,
+        features: true,
+        colors: true,
+        sku: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    // Fill in shipping dims with sensible defaults for the toJSON serializer
+    for (const p of products as Array<Record<string, unknown>>) {
+      p.weightGrams = 500;
+      p.lengthCm = 15;
+      p.breadthCm = 10;
+      p.heightCm = 5;
+    }
+  }
   res.json({ products: products.map(toJSON) });
 });
 
 // GET /api/products/:id
 router.get("/:id", async (req: Request, res: Response) => {
-  const product = await prisma.product.findUnique({
-    where: { id: String(req.params.id) },
-  });
+  // Same column-list fallback as the list route — see comment above.
+  let product: Record<string, unknown> | null;
+  try {
+    product = await prisma.product.findUnique({
+      where: { id: String(req.params.id) },
+    });
+  } catch (err) {
+    console.warn(
+      "[products] findUnique failed, retrying with safe column list:",
+      err instanceof Error ? err.message : String(err)
+    );
+    product = await prisma.product.findUnique({
+      where: { id: String(req.params.id) },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        originalPrice: true,
+        rating: true,
+        reviews: true,
+        category: true,
+        badge: true,
+        image: true,
+        hoverImage: true,
+        images: true,
+        description: true,
+        longDescription: true,
+        inStock: true,
+        stock: true,
+        specs: true,
+        features: true,
+        colors: true,
+        sku: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    if (product) {
+      product.weightGrams = 500;
+      product.lengthCm = 15;
+      product.breadthCm = 10;
+      product.heightCm = 5;
+    }
+  }
   if (!product) throw new HttpError(404, "Product not found");
-  res.json({ product: toJSON(product) });
+  res.json({ product: toJSON(product as unknown as Parameters<typeof toJSON>[0]) });
 });
 
 // POST /api/products (admin)
