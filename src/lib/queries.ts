@@ -8,24 +8,103 @@ import {
   orders as ordersApi,
   admin as adminApi,
   ApiProduct,
+  backendEnabled,
 } from "./api";
 import { getAuthToken } from "./supabase";
+import { products as localProducts, type Product as LocalProduct } from "@/data/products";
 
 // ----- Products -----------------------------------------------------------
+
+/**
+ * Convert a local-fallback Product (id: number, image: string) to the
+ * ApiProduct shape the rest of the UI expects (id: string, image: ImageRef).
+ */
+function localToApiProduct(p: LocalProduct): ApiProduct {
+  return {
+    id: String(p.id),
+    name: p.name,
+    price: p.price,
+    originalPrice: p.originalPrice,
+    rating: p.rating,
+    reviews: p.reviews,
+    category: p.category,
+    badge: p.badge,
+    image: p.image,
+    hoverImage: p.hoverImage,
+    images: p.images,
+    description: p.description,
+    longDescription: p.longDescription,
+    inStock: p.inStock,
+    stock: 100,
+    specs: p.specs,
+    features: p.features,
+    colors: p.colors,
+  };
+}
 
 export function useProducts(params: { category?: string; q?: string } = {}) {
   return useQuery({
     queryKey: ["products", params],
-    queryFn: () => productsApi.list(params),
+    queryFn: async () => {
+      // If the backend URL isn't configured at all (build-time
+      // VITE_API_URL is empty AND config.js didn't load), short-circuit
+      // to local data — there's no point hitting a relative URL.
+      if (!backendEnabled()) {
+        return { products: filterLocal(params) };
+      }
+      // Try the backend first. If it fails (5xx, network error,
+      // Cloudflare block, etc.) fall back to the local data so the
+      // storefront never goes blank. This matches the behavior of the
+      // static data file (src/data/products.ts) that the rest of the
+      // site was built around.
+      try {
+        return await productsApi.list(params);
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.warn(
+            "[useProducts] backend call failed, using local fallback:",
+            err
+          );
+        }
+        return { products: filterLocal(params) };
+      }
+    },
+    retry: 1,
     staleTime: 30_000,
   });
+}
+
+function filterLocal(params: { category?: string; q?: string }): ApiProduct[] {
+  let list = localProducts.map(localToApiProduct);
+  if (params.category) {
+    list = list.filter((p) => p.category === params.category);
+  }
+  if (params.q) {
+    const q = params.q.toLowerCase();
+    list = list.filter((p) => p.name.toLowerCase().includes(q));
+  }
+  return list;
 }
 
 export function useProduct(id: string | undefined) {
   return useQuery({
     queryKey: ["product", id],
-    queryFn: () => productsApi.get(id as string),
+    queryFn: async () => {
+      if (!backendEnabled()) {
+        const local = localProducts.find((p) => String(p.id) === id);
+        if (!local) throw new Error("Product not found");
+        return { product: localToApiProduct(local) };
+      }
+      try {
+        return await productsApi.get(id as string);
+      } catch (err) {
+        const local = localProducts.find((p) => String(p.id) === id);
+        if (local) return { product: localToApiProduct(local) };
+        throw err;
+      }
+    },
     enabled: Boolean(id),
+    retry: 1,
     staleTime: 30_000,
   });
 }
