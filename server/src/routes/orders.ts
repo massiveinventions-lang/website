@@ -219,9 +219,18 @@ router.post(
       }),
     });
     const body = Body.parse(req.body);
-
+    // Pull products. Explicitly list columns we need so this works
+    // even before the Prisma migration that adds weightGrams et al
+    // has been run. The new dimension columns are pulled in
+    // postPaymentFulfillment (which already has a try/catch).
     const products = await prisma.product.findMany({
       where: { id: { in: body.items.map((i) => i.productId) } },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        sku: true,
+      },
     });
     if (products.length !== body.items.length) {
       throw new HttpError(400, "One or more products not found");
