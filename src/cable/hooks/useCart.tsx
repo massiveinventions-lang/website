@@ -14,6 +14,8 @@ export interface CartItem {
   price: number;
   image?: string;
   quantity: number;
+  /** Per-unit delivery charge in INR (0 = free delivery). */
+  deliveryCharge?: number;
 }
 
 interface CartContextValue {
@@ -25,6 +27,7 @@ interface CartContextValue {
     name: string;
     price: number;
     image?: string;
+    deliveryCharge?: number;
   }) => void;
   updateQuantity: (id: string, quantity: number) => void;
   removeFromCart: (id: string) => void;
@@ -85,7 +88,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToCart = useCallback(
-    (product: { id: string; name: string; price: number; image?: string }) => {
+    (product: { id: string; name: string; price: number; image?: string; deliveryCharge?: number }) => {
       setItems((prev) => {
         const existing = prev.find((i) => i.id === product.id);
         if (existing) {
@@ -101,6 +104,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             price: product.price,
             image: product.image,
             quantity: 1,
+            deliveryCharge: product.deliveryCharge,
           },
         ];
       });

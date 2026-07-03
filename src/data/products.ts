@@ -24,6 +24,8 @@ export interface Product {
   description: string;
   longDescription: string;
   inStock: boolean;
+  /** Flat delivery charge in INR added at checkout. Defaults to 0. */
+  deliveryCharge?: number;
   specs: ProductSpec[];
   features: string[];
   colors: { name: string; hex: string }[];
@@ -59,6 +61,7 @@ export const products: Product[] = [
     description: "Hand-turned from premium aged sheesham wood. 10W warm wide soundstage.",
     longDescription: "The Vintage Sheesham Speaker is a statement of craft. Each cabinet is hand-turned by artisans in Jaipur from sustainably sourced premium aged sheesham. The grain is unique on every unit — no two speakers are identical. 10W of warm, wide audio fills the room the way only real wood can.",
     inStock: true,
+    deliveryCharge: 0,
     specs: [
       { label: "Speaker Output", value: "10 Watts" },
       { label: "Wood Type", value: "Aged Sheesham (40 Year)" },
@@ -93,6 +96,7 @@ export const products: Product[] = [
     description: "Deep bass with AI-powered noise cancellation. 8 hrs + 60 hrs with case.",
     longDescription: "Massive Earbuds X are engineered for those who demand clarity in every environment. The 10mm dynamic drivers deliver deep, punchy bass while the AI-powered ANC intelligently filters out ambient noise. Engineered for clarity. Designed for life.",
     inStock: true,
+    deliveryCharge: 30,
     specs: [
       { label: "Driver Size", value: "10mm Dynamic" },
       { label: "ANC", value: "Active Noise Cancellation" },
@@ -129,6 +133,7 @@ export const products: Product[] = [
     description: "80W Super VOOC ultra-fast charging. BIS certified for India.",
     longDescription: "The Massive Super VOOC 80W charger delivers lightning-fast charging at up to 80W for compatible devices. Supports VOOC, SuperVOOC, PD 3.0 and QC 3.0 protocols with multi-layer safety protection. BIS certified for India.",
     inStock: true,
+    deliveryCharge: 30,
     specs: [
       { label: "Output Power", value: "80W Super VOOC / 33W PD" },
       { label: "Charging Protocol", value: "VOOC, SuperVOOC, PD 3.0, QC 3.0" },
@@ -153,7 +158,7 @@ export const products: Product[] = [
   {
     id: 4,
     name: "Massive Data Flow USB-C",
-    price: 9,
+    price: 149,
     rating: 4.6,
     reviews: 4087,
     category: "Cables",
@@ -164,6 +169,7 @@ export const products: Product[] = [
     description: "6A fast charging up to 66W. 480 Mbps data sync. Flat tangle-free design.",
     longDescription: "The Massive Data Flow USB-C cable supports 6A fast charging up to 66W and 480 Mbps data transfer. The flat tangle-free design makes it ideal for everyday carry. Universal compatibility with all USB-C devices.",
     inStock: true,
+    deliveryCharge: 30,
     specs: [
       { label: "Charging Speed", value: "6A / 66W Fast Charge" },
       { label: "Data Transfer", value: "480 Mbps (USB 2.0)" },
@@ -199,6 +205,7 @@ export const products: Product[] = [
     description: "33W PD fast charging with USB-C cable included. Works with iPhone 15+.",
     longDescription: "The Massive Fast C to C Charger bundle includes a 33W PD wall adapter and a USB-C to USB-C cable. Reversible connectors mean no wrong way to plug in. Compatible with iPhone 15+, Android, tablets and laptops. Built to perform. Made to last.",
     inStock: true,
+    deliveryCharge: 30,
     specs: [
       { label: "Charging Standard", value: "PD Fast Charging (USB Power Delivery)" },
       { label: "Connector", value: "USB-A to Type-C (included cable)" },

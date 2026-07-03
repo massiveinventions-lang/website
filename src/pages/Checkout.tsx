@@ -113,7 +113,10 @@ export default function Checkout() {
   };
 
   const freeShippingThreshold = 0; // kept for legacy reference if needed elsewhere
-  const shippingCalc = 0;
+  const shippingCalc = items.reduce(
+    (sum, i) => sum + (i.deliveryCharge ?? 30) * i.quantity,
+    0
+  );
   const total = cartTotal + shippingCalc;
 
   const handleSubmit = async (e: FormEvent) => {
@@ -583,7 +586,7 @@ function OrderSummary({
   cartTotal,
   shipping,
 }: {
-  items: Array<{ id: string; name: string; price: number; quantity: number; image?: string }>;
+  items: Array<{ id: string; name: string; price: number; quantity: number; image?: string; deliveryCharge?: number }>;
   cartTotal: number;
   shipping: number;
 }) {
@@ -625,6 +628,9 @@ function OrderSummary({
                 </p>
                 <p className="text-xs text-[var(--foreground)]/60">
                   Qty {item.quantity} · ₹{item.price.toLocaleString("en-IN")}
+                  {item.deliveryCharge !== undefined && item.deliveryCharge > 0 && (
+                    <> · + ₹{item.deliveryCharge.toLocaleString("en-IN")} delivery</>
+                  )}
                 </p>
               </div>
               <p className="text-sm font-bold text-[var(--foreground)] whitespace-nowrap">
@@ -638,15 +644,9 @@ function OrderSummary({
       <div className="border-t border-[var(--foreground)]/8 pt-4 space-y-2 text-sm">
         <Row label="Subtotal" value={`₹${cartTotal.toLocaleString("en-IN")}`} />
         <Row
-          label="Shipping"
+          label="Delivery"
           value={shipping === 0 ? "Free" : `₹${shipping.toLocaleString("en-IN")}`}
         />
-        {shipping === 0 && cartTotal > 0 && (
-          <p className="text-xs text-green-700 flex items-center gap-1">
-            <Tag className="w-3 h-3" />
-            Free shipping applied
-          </p>
-        )}
         <div className="flex justify-between items-baseline pt-3 border-t border-[var(--foreground)]/8 mt-3">
           <span className="font-black text-base">Total</span>
           <span className="font-black text-lg text-[var(--accent-brown)]">

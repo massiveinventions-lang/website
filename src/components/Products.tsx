@@ -207,6 +207,11 @@ export default function Products() {
                     {product.originalPrice && (
                       <p className="text-xs text-[var(--foreground)]/40 line-through">₹{product.originalPrice.toLocaleString("en-IN")}</p>
                     )}
+                    <p className="text-[10px] text-[var(--foreground)]/50 mt-0.5">
+                      {(product.deliveryCharge ?? 30) === 0
+                        ? "Free delivery"
+                        : `+ ₹${(product.deliveryCharge ?? 30).toLocaleString("en-IN")} delivery`}
+                    </p>
                   </div>
                 </div>
               </motion.div>

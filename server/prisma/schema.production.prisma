@@ -56,6 +56,9 @@ model Product {
   longDescription String?
   inStock         Boolean  @default(true)
   stock           Int      @default(100)
+  // Flat delivery charge in INR added at checkout (0 = free delivery,
+  // e.g. for the speaker). Defaults to 30 for everything else.
+  deliveryCharge  Int      @default(30)
   // Shipping dimensions (used for Shiprocket). Defaults are sane
   // for a small product so the order flow works even before
   // backfilling per-product values. Edit via the admin panel.

@@ -223,15 +223,34 @@ router.post(
     // even before the Prisma migration that adds weightGrams et al
     // has been run. The new dimension columns are pulled in
     // postPaymentFulfillment (which already has a try/catch).
-    const products = await prisma.product.findMany({
-      where: { id: { in: body.items.map((i) => i.productId) } },
-      select: {
-        id: true,
-        name: true,
-        price: true,
-        sku: true,
-      },
-    });
+    let products;
+    try {
+      products = await prisma.product.findMany({
+        where: { id: { in: body.items.map((i) => i.productId) } },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          sku: true,
+          deliveryCharge: true,
+        },
+      });
+    } catch (err) {
+      // The `deliveryCharge` column may not exist on the live DB yet
+      // (migration not run). Log once and fall back to the default of
+      // ₹30 per item so order totals stay accurate.
+      console.warn(
+        "[orders] product query with deliveryCharge failed; using safe select:",
+        err instanceof Error ? err.message : String(err)
+      );
+      products = await prisma.product.findMany({
+        where: { id: { in: body.items.map((i) => i.productId) } },
+        select: { id: true, name: true, price: true, sku: true },
+      });
+      for (const p of products as Array<Record<string, unknown>>) {
+        p.deliveryCharge = 30;
+      }
+    }
     if (products.length !== body.items.length) {
       throw new HttpError(400, "One or more products not found");
     }
@@ -249,7 +268,12 @@ router.post(
       (sum, i) => sum + i.price * i.quantity,
       0
     );
-    const shipping = 0;
+    // Per-product delivery charge (₹30 by default, ₹0 for products
+    // like the speaker). Charged once per item, not per unit.
+    const shipping = orderItems.reduce((sum, i) => {
+      const p = products.find((x) => x.id === i.productId)!;
+      return sum + (p.deliveryCharge ?? 30);
+    }, 0);
     const total = subtotal + shipping;
 
     // Ensure the user actually exists in the DB before linking the foreign key.

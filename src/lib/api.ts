@@ -64,6 +64,8 @@ export interface ApiProduct {
   longDescription?: string;
   inStock: boolean;
   stock?: number;
+  /** Flat delivery charge in INR added at checkout (0 = free delivery). */
+  deliveryCharge?: number;
   specs: { label: string; value: string }[];
   features: string[];
   colors: { name: string; hex: string }[];

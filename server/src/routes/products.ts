@@ -28,6 +28,7 @@ const ProductCreate = z.object({
   longDescription: z.string().optional(),
   inStock: z.boolean().optional(),
   stock: z.number().int().nonnegative().optional(),
+  deliveryCharge: z.number().int().nonnegative().optional(),
   specs: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
   features: z.array(z.string()).optional(),
   colors: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
@@ -61,6 +62,7 @@ function toJSON(p: {
   longDescription: string | null;
   inStock: boolean;
   stock: number;
+  deliveryCharge: number;
   specs: string;
   features: string;
   colors: string;
@@ -84,6 +86,7 @@ function toJSON(p: {
     longDescription: p.longDescription,
     inStock: p.inStock,
     stock: p.stock,
+    deliveryCharge: p.deliveryCharge,
     specs: JSON.parse(p.specs),
     features: JSON.parse(p.features),
     colors: JSON.parse(p.colors),
@@ -148,6 +151,7 @@ router.get("/", async (req: Request, res: Response) => {
         longDescription: true,
         inStock: true,
         stock: true,
+        deliveryCharge: true,
         specs: true,
         features: true,
         colors: true,
@@ -162,6 +166,7 @@ router.get("/", async (req: Request, res: Response) => {
       p.lengthCm = 15;
       p.breadthCm = 10;
       p.heightCm = 5;
+      p.deliveryCharge = p.deliveryCharge ?? 30;
     }
   }
   res.json({ products: products.map(toJSON) });
@@ -198,6 +203,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         longDescription: true,
         inStock: true,
         stock: true,
+        deliveryCharge: true,
         specs: true,
         features: true,
         colors: true,
@@ -211,6 +217,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       product.lengthCm = 15;
       product.breadthCm = 10;
       product.heightCm = 5;
+      product.deliveryCharge = product.deliveryCharge ?? 30;
     }
   }
   if (!product) throw new HttpError(404, "Product not found");

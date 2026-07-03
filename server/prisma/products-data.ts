@@ -22,6 +22,8 @@ export type SeedProduct = {
   longDescription: string;
   inStock: boolean;
   stock: number;
+  /** Flat delivery charge in INR added at checkout (0 = free delivery). */
+  deliveryCharge?: number;
   // Shipping dimensions (used by Shiprocket). Edit per product in the
   // admin panel after deploy if these defaults don't match reality.
   weightGrams?: number;
@@ -57,6 +59,7 @@ export const seedProducts: SeedProduct[] = [
       "The Vintage Sheesham Speaker is a tribute to classic audio craftsmanship. Each enclosure is handcrafted from sustainably sourced Indian Sheesham wood, finished to bring out the natural grain. Premium 40mm drivers deliver rich mids and crisp highs with deep, controlled bass. Bluetooth 5.3 with multipoint pairing, 12-hour battery, USB-C fast charging.",
     inStock: true,
     stock: 50,
+    deliveryCharge: 0,
     specs: [
       { label: "Driver", value: "2× 40mm Full Range" },
       { label: "Power", value: "20W RMS" },
@@ -126,6 +129,7 @@ export const seedProducts: SeedProduct[] = [
       { name: "Navy Blue", hex: "#1B2A4A" },
     ],
     sku: "EARBUDS-X-001",
+    deliveryCharge: 30,
   },
   {
     name: "Massive Super VOOC 80W",
@@ -168,10 +172,11 @@ export const seedProducts: SeedProduct[] = [
       { name: "White", hex: "#F5F5F0" },
     ],
     sku: "CHG-VOOC80-001",
+    deliveryCharge: 30,
   },
   {
     name: "Massive Data Flow USB-C",
-    price: 9,
+    price: 149,
     rating: 4.6,
     reviews: 4087,
     category: "Cables",
@@ -210,6 +215,7 @@ export const seedProducts: SeedProduct[] = [
       { name: "Space Grey", hex: "#6B6B70" },
     ],
     sku: "CABLE-USB-C-001",
+    deliveryCharge: 30,
   },
   {
     name: "Massive Fast C to C",
@@ -252,5 +258,6 @@ export const seedProducts: SeedProduct[] = [
       { name: "White", hex: "#F5F5F0" },
     ],
     sku: "CHG-C2C-33W-001",
+    deliveryCharge: 30,
   },
 ];
