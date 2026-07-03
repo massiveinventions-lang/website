@@ -26,10 +26,10 @@ export async function postPaymentFulfillment(order: any, userName: string | unde
       // Map of SKU → dimensions. Used as a fallback when the DB
       // columns don't exist yet.
       const dimDefaultsBySku: Record<string, { weightGrams: number; lengthCm: number; breadthCm: number; heightCm: number }> = {
-        // Cable — 6×4 inch box, 500g (user-provided, Jul 2 2026)
-        "CABLE-USB-C-001": { weightGrams: 500, lengthCm: 15, breadthCm: 10, heightCm: 2 },
-        // Speaker — 780g wooden box
-        "SPK-SHEESHAM-001": { weightGrams: 780, lengthCm: 22, breadthCm: 12, heightCm: 12 },
+        // Speaker — 6×4 inch box, 500g (user-provided, Jul 2 2026)
+        "SPK-SHEESHAM-001": { weightGrams: 500, lengthCm: 15, breadthCm: 10, heightCm: 10 },
+        // Cable — small flat package
+        "CABLE-USB-C-001": { weightGrams: 80, lengthCm: 12, breadthCm: 8, heightCm: 2 },
         // Earbuds with case
         "EARBUDS-X-001": { weightGrams: 200, lengthCm: 12, breadthCm: 10, heightCm: 5 },
         // 80W charger
