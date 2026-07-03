@@ -133,7 +133,7 @@ export async function sendLoginOtp(args: SendOtpArgs): Promise<void> {
     );
   }
 
-  const fromAddress = process.env.RESEND_FROM ?? "Massive Inventions <no-reply@massiveinvention.in>";
+  const fromAddress = process.env.RESEND_FROM ?? "Massive Inventions <no-reply@massiveinventions.in>";
   const resend = new Resend(apiKey);
 
   const { error } = await resend.emails.send({
@@ -246,7 +246,7 @@ export async function sendOrderConfirmationEmail(args: OrderConfirmationArgs): P
     return;
   }
 
-  const fromAddress = process.env.RESEND_FROM ?? "Massive Inventions <no-reply@massiveinvention.in>";
+  const fromAddress = process.env.RESEND_FROM ?? "Massive Inventions <no-reply@massiveinventions.in>";
   const resend = new Resend(apiKey);
 
   const { error } = await resend.emails.send({

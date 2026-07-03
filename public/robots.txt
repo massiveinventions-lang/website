@@ -5,5 +5,5 @@ Disallow: /checkout
 Disallow: /cart
 Disallow: /admin
 
-Sitemap: https://massiveinvention.in/sitemap.xml
-Sitemap: https://admin.massiveinvention.in/sitemap.xml
+Sitemap: https://massiveinventions.in/sitemap.xml
+Sitemap: https://admin.massiveinventions.in/sitemap.xml
