@@ -77,12 +77,23 @@ router.get('/', async (_req, res) => {
       const parsed = safeJson<{ token?: string }>(text);
       token = parsed?.token ?? null;
     } else if (r.status === 403) {
-      // 403 with the body "Access forbidden" almost always means
-      // Cloudflare blocked the Vercel serverless IP. The current
-      // headers should fix it — if you still see this, the Shiprocket
-      // account itself may be locked or under manual review.
-      authResult.hint =
-        "403 Access forbidden = Cloudflare blocking the request. We now send the full browser header set (Accept, Accept-Language, Accept-Encoding, Origin, Referer). If you still see this on a fresh deploy, the Shiprocket account may be locked — log in to shiprocket.in in a browser to check.";
+      // 403 from Shiprocket's auth endpoint can mean three things:
+      //   1. Wrong email/password (body: "Invalid email and password combination")
+      //   2. Account rate-limited (body: "User blocked due to too many failed login attempts.")
+      //   3. Cloudflare WAF block (body: "Access forbidden")
+      // Look at the response body to disambiguate.
+      const body = safeJson<{ message?: string }>(text);
+      const msg = body?.message ?? "";
+      if (msg.toLowerCase().includes("user blocked")) {
+        authResult.hint =
+          "🚨 Account is RATE-LIMITED by Shiprocket. Too many failed login attempts. Wait 15-30 minutes for the lockout to expire, or contact Shiprocket support to unlock. The password in your env vars is likely WRONG — that's what's caused the failed attempts.";
+      } else if (msg.toLowerCase().includes("access forbidden")) {
+        authResult.hint =
+          "Cloudflare WAF blocked the request. The current headers (Accept, Accept-Language, Accept-Encoding, Origin, Referer) should bypass it. If you still see this, the Shiprocket account may be under manual review — log in to shiprocket.in in a browser to check.";
+      } else {
+        authResult.hint =
+          "Wrong email or password. Update SHIPROCKET_EMAIL or SHIPROCKET_PASSWORD in your Vercel env vars.";
+      }
     }
     report.auth = authResult;
   } catch (err) {
