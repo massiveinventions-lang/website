@@ -80,12 +80,15 @@ export function createApp() {
   app.use("/api/products", productsRouter);
   app.use("/api/orders", ordersRouter);
   app.use("/api/upload", uploadRouter);
+  // Mount /api/admin/migrate-db BEFORE /api/admin — Express matches app.use
+  // prefixes greedily, and /api/admin would otherwise swallow this path
+  // and apply the admin router's requireAuth/requireAdmin middleware to it.
+  app.use("/api/admin/migrate-db", migrateDbRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/newsletter", newsletterRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/replacement-requests", replacementRequestsRouter);
   app.use("/api/test-sr", testSrRouter);
-  app.use("/api/admin/migrate-db", migrateDbRouter);
 
   app.use(notFound);
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) =>
