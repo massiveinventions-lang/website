@@ -17,6 +17,7 @@ const FAQs         = lazy(() => import("@/pages/FAQs"));
 const Contact      = lazy(() => import("@/pages/Contact"));
 const Checkout     = lazy(() => import("@/pages/Checkout"));
 const TermsOfService = lazy(() => import("@/pages/TermsOfService"));
+const Speakers     = lazy(() => import("@/pages/Speakers"));
 
 // Home-page sections: eagerly imported because they are shown immediately.
 import Navbar from "@/components/Navbar";
@@ -90,6 +91,7 @@ function AnimatedRoutes() {
         <Route path="/contact" component={Contact} />
         <Route path="/checkout" component={Checkout} />
         <Route path="/terms-of-service" component={TermsOfService} />
+        <Route path="/speakers" component={Speakers} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
