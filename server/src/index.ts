@@ -16,6 +16,7 @@ import authRouter from "./routes/auth";
 import replacementRequestsRouter from "./routes/replacementRequests";
 import testSrRouter from "./routes/test-sr";
 import migrateDbRouter from "./routes/migrate-db";
+import fixPricesRouter from "./routes/fix-prices";
 
 export function createApp() {
   const app = express();
@@ -84,6 +85,7 @@ export function createApp() {
   // prefixes greedily, and /api/admin would otherwise swallow this path
   // and apply the admin router's requireAuth/requireAdmin middleware to it.
   app.use("/api/admin/migrate-db", migrateDbRouter);
+  app.use("/api/admin/fix-prices", fixPricesRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/newsletter", newsletterRouter);
   app.use("/api/auth", authRouter);

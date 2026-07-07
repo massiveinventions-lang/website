@@ -39,7 +39,7 @@ export type SeedProduct = {
 export const seedProducts: SeedProduct[] = [
   {
     name: "Vintage Sheesham Speaker",
-    price: 1399,
+    price: 1299,
     originalPrice: 5999,
     rating: 4.9,
     reviews: 1287,
@@ -85,7 +85,7 @@ export const seedProducts: SeedProduct[] = [
   },
   {
     name: "Massive Earbuds X",
-    price: 999,
+    price: 449,
     originalPrice: 1499,
     rating: 4.7,
     reviews: 3421,

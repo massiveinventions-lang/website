@@ -45,7 +45,7 @@ export const products: Product[] = [
   {
     id: 1,
     name: "Vintage Sheesham Speaker",
-    price: 1199,
+    price: 1299,
     rating: 4.9,
     reviews: 1847,
     category: "Speakers",
@@ -85,7 +85,7 @@ export const products: Product[] = [
   {
     id: 2,
     name: "Massive Earbuds X",
-    price: 499,
+    price: 449,
     rating: 4.7,
     reviews: 3124,
     category: "Earbuds",
