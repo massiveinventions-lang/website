@@ -151,7 +151,11 @@ router.get("/", async (req: Request, res: Response) => {
         longDescription: true,
         inStock: true,
         stock: true,
-        deliveryCharge: true,
+        // NOTE: `deliveryCharge` is intentionally OMITTED from this
+        // fallback select. The orders route ([orders.ts:226-256]) has
+        // the same fallback shape and has been verified to work
+        // against an un-migrated DB. Including `deliveryCharge` here
+        // makes the retry also fail, and the 500 leaks to the user.
         specs: true,
         features: true,
         colors: true,
@@ -166,7 +170,7 @@ router.get("/", async (req: Request, res: Response) => {
       p.lengthCm = 15;
       p.breadthCm = 10;
       p.heightCm = 5;
-      p.deliveryCharge = p.deliveryCharge ?? 30;
+      p.deliveryCharge = 30;
     }
   }
   res.json({ products: products.map(toJSON) });
@@ -203,7 +207,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         longDescription: true,
         inStock: true,
         stock: true,
-        deliveryCharge: true,
+        // `deliveryCharge` deliberately omitted (see list route above).
         specs: true,
         features: true,
         colors: true,
@@ -217,7 +221,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       product.lengthCm = 15;
       product.breadthCm = 10;
       product.heightCm = 5;
-      product.deliveryCharge = product.deliveryCharge ?? 30;
+      product.deliveryCharge = 30;
     }
   }
   if (!product) throw new HttpError(404, "Product not found");

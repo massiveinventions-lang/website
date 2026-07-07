@@ -174,17 +174,3 @@ export function useAdminStats(enabled = true) {
     enabled,
   });
 }
-
-// ----- Local helpers ------------------------------------------------------
-
-/** Convert API product (id: string) to the data-file Product shape (id: number). */
-export function apiProductToLocal(
-  p: ApiProduct
-): import("@/data/products").Product {
-  return {
-    ...p,
-    id: Number(p.id.replace(/-/g, "").slice(0, 13)) || Math.abs(
-      [...p.id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0)
-    ),
-  } as unknown as import("@/data/products").Product;
-}

@@ -252,7 +252,22 @@ router.post(
       }
     }
     if (products.length !== body.items.length) {
-      throw new HttpError(400, "One or more products not found");
+      // Figure out which productId(s) don't exist so the error message
+      // is actionable. This is the most common failure mode when a
+      // user's cart was built from the local-fallback dataset (which
+      // emits numeric string IDs like "1", "2") and then submitted
+      // against the live DB (which has UUIDs). Telling the user
+      // "one or more products not found" without saying WHICH one
+      // makes it impossible to recover.
+      const foundIds = new Set(products.map((p) => p.id));
+      const missing = body.items
+        .map((i) => i.productId)
+        .filter((id) => !foundIds.has(id));
+      throw new HttpError(
+        400,
+        `One or more products not found: ${missing.join(", ")}. ` +
+          `Please remove them from your cart and try again.`
+      );
     }
     const orderItems = body.items.map((i) => {
       const p = products.find((x) => x.id === i.productId)!;
