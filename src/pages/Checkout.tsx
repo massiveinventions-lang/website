@@ -260,50 +260,14 @@ export default function Checkout() {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-[var(--background)] flex flex-col">
-        <Navbar />
-        <main className="flex-grow flex items-center justify-center px-6 lg:px-12 py-12 lg:py-20">
-          <div className="w-full max-w-md bg-white rounded-3xl border border-[var(--foreground)]/8 p-6 sm:p-8 text-center shadow-sm">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--accent-brown)]/10 text-[var(--accent-brown)] flex items-center justify-center mb-4">
-              <Lock className="w-7 h-7" />
-            </div>
-            <h1 className="text-2xl font-black text-[var(--foreground)] mb-2">
-              Sign in to checkout
-            </h1>
-            <p className="text-[var(--foreground)]/60 mb-6 text-sm">
-              You'll need an account to place an order. We'll email you a one-time code — no password to remember.
-            </p>
-            <button
-              type="button"
-              onClick={() => setAuthOpen(true)}
-              className="w-full h-12 rounded-xl bg-[var(--foreground)] hover:bg-[var(--accent-brown)] text-white font-bold transition-colors"
-            >
-              Sign in & continue
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsCartOpen(false);
-                setTimeout(() => navigate("/"), 0);
-              }}
-              className="w-full h-10 mt-2 text-sm font-semibold text-[var(--foreground)]/60 hover:text-[var(--foreground)] transition-colors"
-            >
-              Continue shopping
-            </button>
-          </div>
-        </main>
-        <Footer />
-        <CartSidebar />
-      </div>
-    );
-  }
+  // Pick the right body for the current state. We keep the AuthModal
+  // mounted at the top level so clicking "Sign in & continue" actually
+  // opens the modal — earlier this branch had no <AuthModal />, so the
+  // button's onClick was setting state that nothing was listening to.
+  let body: React.ReactNode;
 
-  if (successOrderId) {
-    return (
+  if (successOrderId && user) {
+    body = (
       <SuccessPage
         orderId={successOrderId}
         email={user.email}
@@ -314,52 +278,76 @@ export default function Checkout() {
         }}
       />
     );
-  }
-
-  // Empty-cart state — also inline, no redirect.
-  if (items.length === 0) {
-    return (
-      <div className="min-h-screen bg-[var(--background)] flex flex-col">
-        <Navbar />
-        <main className="flex-grow flex items-center justify-center px-6 lg:px-12 py-12 lg:py-20">
-          <div className="w-full max-w-md bg-white rounded-3xl border border-[var(--foreground)]/8 p-6 sm:p-8 text-center shadow-sm">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--accent-brown)]/10 text-[var(--accent-brown)] flex items-center justify-center mb-4">
-              <Package className="w-7 h-7" />
-            </div>
-            <h1 className="text-2xl font-black text-[var(--foreground)] mb-2">
-              Your cart is empty
-            </h1>
-            <p className="text-[var(--foreground)]/60 mb-6 text-sm">
-              Add a product to your cart, then come back here to checkout.
-            </p>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsCartOpen(false);
-                // Use setTimeout to ensure the cart state update
-                // flushes before navigation — prevents a re-render race
-                // that can cause the click handler to be re-invoked
-                // mid-navigation.
-                setTimeout(() => navigate("/"), 0);
-              }}
-              className="w-full h-12 rounded-xl bg-[var(--foreground)] hover:bg-[var(--accent-brown)] text-white font-bold transition-colors"
-            >
-              Browse products
-            </button>
+  } else if (!user) {
+    body = (
+      <main className="flex-grow flex items-center justify-center px-6 lg:px-12 py-12 lg:py-20">
+        <div className="w-full max-w-md bg-white rounded-3xl border border-[var(--foreground)]/8 p-6 sm:p-8 text-center shadow-sm">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--accent-brown)]/10 text-[var(--accent-brown)] flex items-center justify-center mb-4">
+            <Lock className="w-7 h-7" />
           </div>
-        </main>
-        <Footer />
-        <CartSidebar />
-      </div>
+          <h1 className="text-2xl font-black text-[var(--foreground)] mb-2">
+            Sign in to checkout
+          </h1>
+          <p className="text-[var(--foreground)]/60 mb-6 text-sm">
+            You'll need an account to place an order. We'll email you a one-time code — no password to remember.
+          </p>
+          <button
+            type="button"
+            onClick={() => setAuthOpen(true)}
+            className="w-full h-12 rounded-xl bg-[var(--foreground)] hover:bg-[var(--accent-brown)] text-white font-bold transition-colors"
+          >
+            Sign in & continue
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsCartOpen(false);
+              setTimeout(() => navigate("/"), 0);
+            }}
+            className="w-full h-10 mt-2 text-sm font-semibold text-[var(--foreground)]/60 hover:text-[var(--foreground)] transition-colors"
+          >
+            Continue shopping
+          </button>
+        </div>
+      </main>
     );
-  }
-
-
-  return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col">
-      <Navbar />
+  } else if (items.length === 0) {
+    // Empty-cart state — also inline, no redirect.
+    body = (
+      <main className="flex-grow flex items-center justify-center px-6 lg:px-12 py-12 lg:py-20">
+        <div className="w-full max-w-md bg-white rounded-3xl border border-[var(--foreground)]/8 p-6 sm:p-8 text-center shadow-sm">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--accent-brown)]/10 text-[var(--accent-brown)] flex items-center justify-center mb-4">
+            <Package className="w-7 h-7" />
+          </div>
+          <h1 className="text-2xl font-black text-[var(--foreground)] mb-2">
+            Your cart is empty
+          </h1>
+          <p className="text-[var(--foreground)]/60 mb-6 text-sm">
+            Add a product to your cart, then come back here to checkout.
+          </p>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsCartOpen(false);
+              // Use setTimeout to ensure the cart state update
+              // flushes before navigation — prevents a re-render race
+              // that can cause the click handler to be re-invoked
+              // mid-navigation.
+              setTimeout(() => navigate("/"), 0);
+            }}
+            className="w-full h-12 rounded-xl bg-[var(--foreground)] hover:bg-[var(--accent-brown)] text-white font-bold transition-colors"
+          >
+            Browse products
+          </button>
+        </div>
+      </main>
+    );
+  } else {
+    body = (
       <main className="flex-grow">
         <div className="container mx-auto px-6 lg:px-12 py-8 lg:py-12">
           <button
@@ -496,13 +484,46 @@ export default function Checkout() {
           </div>
         </div>
       </main>
+    );
+  }
+
+  // SuccessPage already includes its own Navbar/Footer/CartSidebar. For
+  // the other states we wrap in the standard page chrome.
+  if (successOrderId && user) {
+    return (
+      <>
+        {body}
+        {/* Local AuthModal so the "Sign in & continue" button can open it
+            inline. Kept mounted in every state so a click on a button
+            that flips the page (e.g. successful sign-in mid-flow) doesn't
+            unmount it before the user finishes typing. */}
+        <AuthModal
+          open={authOpen}
+          onClose={() => setAuthOpen(false)}
+          initialMode="signin"
+        />
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[var(--background)] flex flex-col">
+      <Navbar />
+      {body}
       <Footer />
       <CartSidebar />
 
       {/* Local AuthModal instance so the "Sign in & continue" button can
           open it inline. The Navbar's own AuthModal stays closed; this
-          one only opens when we set authOpen=true. */}
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} initialMode="signin" />
+          one only opens when we set authOpen=true. We render it here at
+          the top level (not inside any of the state branches) so it's
+          always mounted — otherwise clicking "Sign in & continue" before
+          the user is signed in would set authOpen=true with no listener. */}
+      <AuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        initialMode="signin"
+      />
     </div>
   );
 }
