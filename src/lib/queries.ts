@@ -7,7 +7,9 @@ import {
   products as productsApi,
   orders as ordersApi,
   admin as adminApi,
+  reviews as reviewsApi,
   ApiProduct,
+  ApiReview,
   backendEnabled,
 } from "./api";
 import { getAuthToken } from "./supabase";
@@ -172,5 +174,70 @@ export function useAdminStats(enabled = true) {
       return adminApi.stats(token);
     },
     enabled,
+  });
+}
+
+// ----- Reviews ------------------------------------------------------------
+
+/**
+ * List customer reviews for one product. Newest first.
+ *
+ * The backend is the source of truth — if it's unreachable we resolve
+ * with an empty list so the page still renders the demo reviews
+ * (the Reviews tab is the only consumer and it always shows the
+ * local demo set).
+ */
+export function useProductReviews(productId: string | undefined) {
+  return useQuery({
+    queryKey: ["reviews", "product", productId],
+    queryFn: async (): Promise<ApiReview[]> => {
+      if (!productId) return [];
+      if (!backendEnabled()) return [];
+      try {
+        const { reviews } = await reviewsApi.list(productId);
+        return reviews;
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.warn(
+            "[useProductReviews] backend call failed, returning empty list:",
+            err
+          );
+        }
+        return [];
+      }
+    },
+    enabled: Boolean(productId),
+    retry: 1,
+    staleTime: 30_000,
+  });
+}
+
+/** Create a review for the current user. */
+export function useCreateReview(productId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { rating: number; text: string }) => {
+      const token = await getAuthToken();
+      if (!token) throw new Error("Please sign in to write a review");
+      return reviewsApi.create({ productId, ...input }, token);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reviews", "product", productId] });
+    },
+  });
+}
+
+/** Delete a review. The server enforces that the caller is the author. */
+export function useDeleteReview(productId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (reviewId: string) => {
+      const token = await getAuthToken();
+      if (!token) throw new Error("Please sign in");
+      return reviewsApi.remove(reviewId, token);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reviews", "product", productId] });
+    },
   });
 }

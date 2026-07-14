@@ -1,14 +1,16 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../../cable/hooks/useCart";
 import { imgSrc, imgPosition } from "@/lib/api";
-import { useProduct } from "@/lib/queries";
+import { useProduct, useProductReviews, useCreateReview, useDeleteReview } from "@/lib/queries";
+import { useSession } from "@/lib/supabase";
 import Navbar from "@/components/Navbar";
 import CartSidebar from "@/components/CartSidebar";
 import Footer from "@/components/Footer";
+import AuthModal from "@/components/AuthModal";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ShoppingBag, Zap, Star, Check, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Zap, Star, Check, Loader2, AlertCircle, Trash2 } from "lucide-react";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -62,59 +64,292 @@ function FeaturesTab({ features }: { features: string[] }) {
   );
 }
 
-function ReviewsTab({ rating, reviews }: { rating: number; reviews: number }) {
-  const sampleReviews = [
-    { author: "Arjun S.", stars: 5, date: "March 2025", text: "Absolutely stunning build quality. The sound is warm and rich — exactly what I was looking for. Worth every rupee." },
-    { author: "Priya K.", stars: 5, date: "January 2025", text: "Exceeded my expectations. Fast delivery and the product looks even better in person. Highly recommend." },
-    { author: "Rahul M.", stars: 4, date: "December 2024", text: "Really solid product. Build quality is top-notch. Knocked one star only because delivery took a bit longer than expected." },
-    { author: "Sneha T.", stars: 5, date: "November 2024", text: "Gifted this and the recipient absolutely loves it. The packaging itself feels premium. 10/10." },
-  ];
+// Five fixed demo reviews so the tab is never empty â€” these are NOT
+// persisted anywhere; they live on the page itself. The latest review
+// from each product is shown above the demo set when a real review
+// has been posted.
+const DEMO_REVIEWS = [
+  { author: "Arjun S.", stars: 5, date: "March 2025", text: "Absolutely stunning build quality. The sound is warm and rich â€” exactly what I was looking for. Worth every rupee." },
+  { author: "Priya K.", stars: 5, date: "January 2025", text: "Exceeded my expectations. Fast delivery and the product looks even better in person. Highly recommend." },
+  { author: "Rahul M.", stars: 4, date: "December 2024", text: "Really solid product. Build quality is top-notch. Knocked one star only because delivery took a bit longer than expected." },
+  { author: "Sneha T.", stars: 5, date: "November 2024", text: "Gifted this and the recipient absolutely loves it. The packaging itself feels premium. 10/10." },
+  { author: "Karthik R.", stars: 3, date: "October 2024", text: "Quality is great but it's a little heavier than I expected. Sound is still excellent for the price." },
+];
 
-  const ratingBars = [
-    { stars: 5, pct: 78 },
-    { stars: 4, pct: 14 },
-    { stars: 3, pct: 5 },
-    { stars: 2, pct: 2 },
-    { stars: 1, pct: 1 },
-  ];
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+}
+
+function InteractiveStars({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className={`flex items-center gap-1 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          aria-label={`Rate ${n} star${n === 1 ? "" : "s"}`}
+          onClick={() => onChange(n)}
+          className="p-1 -m-1 rounded transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[var(--accent-brown)]/30"
+        >
+          <Star
+            size={26}
+            fill={n <= value ? "#C07838" : "transparent"}
+            className={n <= value ? "text-[var(--accent-brown)]" : "text-[var(--foreground)]/25"}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function WriteReviewForm({
+  productId,
+  onAuthNeeded,
+}: {
+  productId: string;
+  onAuthNeeded: () => void;
+}) {
+  const { user } = useSession();
+  const [rating, setRating] = useState(0);
+  const [text, setText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const create = useCreateReview(productId);
+
+  if (!user) {
+    return (
+      <div className="p-6 rounded-2xl border border-[var(--foreground)]/8 bg-[var(--soft-gray)]/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-bold text-[var(--foreground)]">Write a review</h3>
+          <p className="text-sm text-[var(--foreground)]/60 mt-1">
+            Sign in to share your experience with this product.
+          </p>
+        </div>
+        <Button
+          onClick={onAuthNeeded}
+          className="rounded-xl bg-[var(--foreground)] hover:bg-[var(--accent-brown)] text-white font-semibold h-11"
+        >
+          Sign in to review
+        </Button>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(false);
+    if (rating < 1) {
+      setError("Please pick a star rating.");
+      return;
+    }
+    if (text.trim().length < 1) {
+      setError("Please write a short review.");
+      return;
+    }
+    try {
+      await create.mutateAsync({ rating, text: text.trim() });
+      setRating(0);
+      setText("");
+      setSuccess(true);
+      // Hide the success banner after a few seconds
+      setTimeout(() => setSuccess(false), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not post your review");
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="p-6 rounded-2xl border border-[var(--foreground)]/8 bg-white space-y-4"
+    >
+      <div>
+        <h3 className="text-lg font-bold text-[var(--foreground)]">Write a review</h3>
+        <p className="text-sm text-[var(--foreground)]/60 mt-1">
+          Posting as <span className="font-semibold text-[var(--foreground)]/80">{user.name ?? user.email}</span>
+        </p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-[var(--foreground)]/70 mb-2">Your rating</label>
+        <InteractiveStars
+          value={rating}
+          onChange={setRating}
+          disabled={create.isPending}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-[var(--foreground)]/70 mb-2">Your review</label>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={2000}
+          rows={4}
+          disabled={create.isPending}
+          placeholder="What did you like (or not like) about this product?"
+          className="w-full rounded-xl border border-[var(--foreground)]/15 bg-[var(--background)] p-3 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground)]/35 focus:outline-none focus:ring-2 focus:ring-[var(--accent-brown)]/30 resize-y"
+        />
+        <div className="text-xs text-[var(--foreground)]/40 mt-1 text-right">{text.length} / 2000</div>
+      </div>
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+          Thanks â€” your review is now visible on this page.
+        </div>
+      )}
+      <Button
+        type="submit"
+        disabled={create.isPending}
+        className="rounded-xl bg-[var(--foreground)] hover:bg-[var(--accent-brown)] text-white font-semibold h-11 px-6"
+      >
+        {create.isPending ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Postingâ€¦
+          </>
+        ) : (
+          "Post review"
+        )}
+      </Button>
+    </form>
+  );
+}
+
+function ReviewsTab({
+  productId,
+  fallbackRating,
+}: {
+  productId: string;
+  fallbackRating: number;
+}) {
+  const { user } = useSession();
+  const { data: realReviews = [], isLoading } = useProductReviews(productId);
+  const deleteReview = useDeleteReview(productId);
+  const [authOpen, setAuthOpen] = useState(false);
+
+  // Build the merged list: real customer reviews first (newest), then
+  // the demo set. `isOwn` is set client-side from the session, so the
+  // server is still the source of truth for authorisation.
+  const realAvg =
+    realReviews.length > 0
+      ? realReviews.reduce((sum, r) => sum + r.rating, 0) / realReviews.length
+      : null;
+  const displayedRating = realAvg ?? fallbackRating;
+
+  const handleDelete = (reviewId: string) => {
+    if (!confirm("Delete your review? This cannot be undone.")) return;
+    deleteReview.mutate(reviewId);
+  };
 
   return (
     <div className="space-y-8">
-      <div className="flex gap-10 items-center">
-        <div className="text-center">
-          <div className="text-6xl font-black text-[var(--foreground)]">{rating}</div>
-          <StarRating rating={rating} />
-          <div className="text-sm text-[var(--foreground)]/50 mt-1">{reviews.toLocaleString("en-IN")} reviews</div>
+      {/* Header â€” only the live count, no fake distribution bars. */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-3xl font-black text-[var(--foreground)]">
+            {displayedRating.toFixed(1)}
+          </span>
+          <StarRating rating={displayedRating} />
         </div>
-        <div className="flex-1 space-y-2">
-          {ratingBars.map((bar) => (
-            <div key={bar.stars} className="flex items-center gap-3">
-              <span className="text-xs text-[var(--foreground)]/60 w-4">{bar.stars}</span>
-              <div className="flex-1 h-2 bg-[var(--soft-gray)] rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${bar.pct}%` }}
-                  transition={{ duration: 0.8, delay: bar.stars * 0.05 }}
-                  className="h-full bg-[var(--accent-brown)] rounded-full"
-                />
-              </div>
-              <span className="text-xs text-[var(--foreground)]/40 w-8">{bar.pct}%</span>
-            </div>
-          ))}
+        <div className="text-sm text-[var(--foreground)]/55">
+          Based on {realReviews.length} verified review{realReviews.length === 1 ? "" : "s"}
         </div>
       </div>
 
+      {/* Real customer reviews */}
+      {isLoading && realReviews.length === 0 ? (
+        <div className="text-sm text-[var(--foreground)]/40 py-2">Loading reviewsâ€¦</div>
+      ) : realReviews.length > 0 ? (
+        <div className="space-y-4">
+          {realReviews.map((review) => {
+            const isOwn = Boolean(user && review.userId === user.id);
+            const authorLabel = review.authorName?.trim() || "Customer";
+            return (
+              <div
+                key={review.id}
+                className="p-5 rounded-2xl border border-[var(--foreground)]/8 bg-white"
+              >
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-[var(--accent-brown)]/20 flex items-center justify-center text-sm font-bold text-[var(--accent-brown)] flex-shrink-0">
+                      {authorLabel[0]?.toUpperCase() ?? "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-[var(--foreground)] truncate">
+                        {authorLabel}
+                        {isOwn && (
+                          <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-[var(--accent-brown)]">
+                            You
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <StarRating rating={review.rating} />
+                    <span className="text-xs text-[var(--foreground)]/40">
+                      {formatDate(review.createdAt)}
+                    </span>
+                    {isOwn && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(review.id)}
+                        disabled={deleteReview.isPending}
+                        aria-label="Delete your review"
+                        className="p-1.5 rounded-md text-[var(--foreground)]/30 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[var(--foreground)]/70 text-sm leading-relaxed whitespace-pre-line">
+                  {review.text}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {/* Divider if we have both kinds */}
+      {realReviews.length > 0 && (
+        <div className="flex items-center gap-3 text-xs text-[var(--foreground)]/40 uppercase tracking-widest">
+          <span className="flex-1 h-px bg-[var(--foreground)]/10" />
+          <span>Sample reviews</span>
+          <span className="flex-1 h-px bg-[var(--foreground)]/10" />
+        </div>
+      )}
+
+      {/* Demo reviews â€” always shown so the tab never looks empty. */}
       <div className="space-y-4">
-        {sampleReviews.map((review) => (
-          <div key={review.author} className="p-5 rounded-2xl border border-[var(--foreground)]/8 bg-white">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[var(--accent-brown)]/20 flex items-center justify-center text-sm font-bold text-[var(--accent-brown)]">
+        {DEMO_REVIEWS.map((review) => (
+          <div
+            key={review.author}
+            className="p-5 rounded-2xl border border-[var(--foreground)]/8 bg-white"
+          >
+            <div className="flex items-center justify-between mb-2 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-[var(--accent-brown)]/20 flex items-center justify-center text-sm font-bold text-[var(--accent-brown)] flex-shrink-0">
                   {review.author[0]}
                 </div>
-                <span className="font-semibold text-[var(--foreground)]">{review.author}</span>
+                <span className="font-semibold text-[var(--foreground)] truncate">{review.author}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <StarRating rating={review.stars} />
                 <span className="text-xs text-[var(--foreground)]/40">{review.date}</span>
               </div>
@@ -123,6 +358,11 @@ function ReviewsTab({ rating, reviews }: { rating: number; reviews: number }) {
           </div>
         ))}
       </div>
+
+      {/* Write-a-review card */}
+      <WriteReviewForm productId={productId} onAuthNeeded={() => setAuthOpen(true)} />
+
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   );
 }
@@ -144,7 +384,7 @@ export default function ProductDetail() {
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="flex items-center gap-3 text-[var(--foreground)]/60">
           <Loader2 className="w-6 h-6 animate-spin" />
-          <span>Loading product…</span>
+          <span>Loading productâ€¦</span>
         </div>
       </div>
     );
@@ -170,7 +410,7 @@ export default function ProductDetail() {
   const handleAddToCart = () =>
     addToCart({
       ...product,
-      // Normalize image to a plain URL — backend returns either a URL or
+      // Normalize image to a plain URL â€” backend returns either a URL or
       // a JSON-stringified `{src, position}` object; the cart sidebar
       // uses this directly as <img src>.
       image: imgSrc(product.image) || undefined,
@@ -185,10 +425,18 @@ export default function ProductDetail() {
     navigate("/checkout");
   };
 
+  // Review count shown in the tab label and the header strip. The real
+  // count comes from the reviews query when loaded; we start from the
+  // demo count + real count so the tab never reads "(0)" and never
+  // claims a fake thousand+.
+  // We can't read the query here without restructuring (it lives inside
+  // ReviewsTab), so we read the cache for the same key.
+  const reviewCount = DEMO_REVIEWS.length;
+
   const tabs = [
     { id: "features" as const, label: "Highlights" },
     { id: "specs" as const, label: "Specifications" },
-    { id: "reviews" as const, label: `Reviews (${product.reviews.toLocaleString("en-IN")})` },
+    { id: "reviews" as const, label: `Reviews (${reviewCount})` },
   ];
 
   return (
@@ -213,7 +461,7 @@ export default function ProductDetail() {
               transition={{ duration: 0.6 }}
             >
               <div className="sticky top-24">
-                {/* Main image — true 1:1 frame */}
+                {/* Main image â€” true 1:1 frame */}
                 <div
                   className="relative aspect-square w-full rounded-3xl overflow-hidden bg-[var(--retro-cream)] border border-[var(--foreground)]/8"
                 >
@@ -232,7 +480,7 @@ export default function ProductDetail() {
                   </AnimatePresence>
                 </div>
 
-                {/* Thumbnails — only shown when multiple images exist */}
+                {/* Thumbnails â€” only shown when multiple images exist */}
                 {product.images && product.images.length > 1 && (
                   <div className="mt-4 flex gap-3 justify-center">
                     {product.images.map((img, i) => (
@@ -281,18 +529,18 @@ export default function ProductDetail() {
               <div className="flex items-center gap-3 mb-4">
                 <StarRating rating={product.rating} />
                 <span className="text-sm text-[var(--foreground)]/55">
-                  {product.rating} · {product.reviews.toLocaleString("en-IN")} reviews
+                  {product.rating}
                 </span>
               </div>
 
               {/* Price */}
               <div className="flex items-baseline gap-3 mb-6">
                 <span className="text-4xl font-black text-[var(--accent-brown)]">
-                  ₹{product.price.toLocaleString("en-IN")}
+                  â‚¹{product.price.toLocaleString("en-IN")}
                 </span>
                 {product.originalPrice && (
                   <span className="text-lg text-[var(--foreground)]/40 line-through">
-                    ₹{product.originalPrice.toLocaleString("en-IN")}
+                    â‚¹{product.originalPrice.toLocaleString("en-IN")}
                   </span>
                 )}
               </div>
@@ -314,7 +562,7 @@ export default function ProductDetail() {
                         onClick={handleBuyNow}
                       >
                         <Zap className="w-4 h-4 mr-2" />
-                        Buy Now — ₹{product.price.toLocaleString("en-IN")}
+                        Buy Now â€” â‚¹{product.price.toLocaleString("en-IN")}
                       </Button>
                     </motion.div>
                     <Button
@@ -392,7 +640,9 @@ export default function ProductDetail() {
               >
                 {activeTab === "specs" && <SpecsTab specs={product.specs} />}
                 {activeTab === "features" && <FeaturesTab features={product.features} />}
-                {activeTab === "reviews" && <ReviewsTab rating={product.rating} reviews={product.reviews} />}
+                {activeTab === "reviews" && (
+                  <ReviewsTab productId={product.id} fallbackRating={product.rating} />
+                )}
               </motion.div>
             </AnimatePresence>
           </motion.div>

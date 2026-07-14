@@ -14,6 +14,7 @@ import adminRouter from "./routes/admin";
 import newsletterRouter from "./routes/newsletter";
 import authRouter from "./routes/auth";
 import replacementRequestsRouter from "./routes/replacementRequests";
+import reviewsRouter from "./routes/reviews";
 import testSrRouter from "./routes/test-sr";
 import migrateDbRouter from "./routes/migrate-db";
 import fixPricesRouter from "./routes/fix-prices";
@@ -90,6 +91,7 @@ export function createApp() {
   app.use("/api/newsletter", newsletterRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/replacement-requests", replacementRequestsRouter);
+  app.use("/api/reviews", reviewsRouter);
   app.use("/api/test-sr", testSrRouter);
 
   app.use(notFound);

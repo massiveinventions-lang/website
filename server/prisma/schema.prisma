@@ -140,3 +140,21 @@ model ReplacementRequest {
   @@index([createdAt])
   @@map("replacement_requests")
 }
+
+model ProductReview {
+  id         String   @id @default(cuid())
+  productId  String   @map("product_id")
+  userId     String   @map("user_id")
+  // Snapshot of the author's name at the time of posting, so a review
+  // survives even if the user later edits their profile. Falls back to
+  // the email prefix in the route handler when not set.
+  authorName String?  @map("author_name")
+  rating     Int      // 1..5
+  text       String
+  createdAt  DateTime @default(now())  @map("created_at")
+  updatedAt  DateTime @updatedAt       @map("updated_at")
+
+  @@index([productId, createdAt])
+  @@index([userId])
+  @@map("product_reviews")
+}

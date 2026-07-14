@@ -265,6 +265,36 @@ export const admin = {
     ),
 };
 
+// ---- Reviews ------------------------------------------------------------
+
+export interface ApiReview {
+  id: string;
+  productId: string;
+  /** Stable author id — used to decide which rows to let the current user delete. */
+  userId: string;
+  authorName: string | null;
+  rating: number;
+  text: string;
+  createdAt: string;
+}
+
+export const reviews = {
+  list: (productId: string) =>
+    request<{ reviews: ApiReview[] }>(
+      `/api/reviews?productId=${encodeURIComponent(productId)}`
+    ),
+  create: (
+    body: { productId: string; rating: number; text: string },
+    token: string
+  ) =>
+    request<{ review: ApiReview }>(`/api/reviews`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }, token),
+  remove: (id: string, token: string) =>
+    request<{ ok: true }>(`/api/reviews/${id}`, { method: "DELETE" }, token),
+};
+
 // ---- Helpers ------------------------------------------------------------
 
 /** True if the backend is reachable (i.e. VITE_API_URL is set). */
