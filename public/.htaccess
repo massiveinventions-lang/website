@@ -5,10 +5,21 @@
 #   2. Long cache headers for fingerprinted assets
 #   3. Aggressive compression for HTML/CSS/JS
 #   4. Security headers (X-Frame-Options, etc.)
+#   5. UTF-8 charset — must be set BEFORE any rewrite/compression rules
+#      so the browser doesn't try to read the served HTML/JS as
+#      Latin-1 (which garbles the `₹` rupee symbol and other
+#      multi-byte characters).
 #
 # Hostinger uses Apache + LiteSpeed. Both support .htaccess overrides.
 # If your Hostinger plan uses a different server, see `_redirects` for
 # Netlify-style hosting or `vercel.json` for Vercel.
+
+# Force UTF-8 on all served text. mod_mime AddCharset handles every
+# text-ish type; AddDefaultCharset is the catch-all.
+AddDefaultCharset UTF-8
+<IfModule mod_mime.c>
+  AddCharset UTF-8 .html .js .css .json .xml .svg .txt
+</IfModule>
 
 <IfModule mod_rewrite.c>
   # Enable rewrite engine
