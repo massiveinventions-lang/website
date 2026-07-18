@@ -64,12 +64,12 @@ function FeaturesTab({ features }: { features: string[] }) {
   );
 }
 
-// Five fixed demo reviews so the tab is never empty â€” these are NOT
+// Five fixed demo reviews so the tab is never empty — these are NOT
 // persisted anywhere; they live on the page itself. The latest review
 // from each product is shown above the demo set when a real review
 // has been posted.
 const DEMO_REVIEWS = [
-  { author: "Arjun S.", stars: 5, date: "March 2025", text: "Absolutely stunning build quality. The sound is warm and rich â€” exactly what I was looking for. Worth every rupee." },
+  { author: "Arjun S.", stars: 5, date: "March 2025", text: "Absolutely stunning build quality. The sound is warm and rich — exactly what I was looking for. Worth every rupee." },
   { author: "Priya K.", stars: 5, date: "January 2025", text: "Exceeded my expectations. Fast delivery and the product looks even better in person. Highly recommend." },
   { author: "Rahul M.", stars: 4, date: "December 2024", text: "Really solid product. Build quality is top-notch. Knocked one star only because delivery took a bit longer than expected." },
   { author: "Sneha T.", stars: 5, date: "November 2024", text: "Gifted this and the recipient absolutely loves it. The packaging itself feels premium. 10/10." },
@@ -208,7 +208,7 @@ function WriteReviewForm({
       )}
       {success && (
         <div className="text-sm text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
-          Thanks â€” your review is now visible on this page.
+          Thanks — your review is now visible on this page.
         </div>
       )}
       <Button
@@ -219,7 +219,7 @@ function WriteReviewForm({
         {create.isPending ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Postingâ€¦
+            Posting…
           </>
         ) : (
           "Post review"
@@ -257,7 +257,7 @@ function ReviewsTab({
 
   return (
     <div className="space-y-8">
-      {/* Header â€” only the live count, no fake distribution bars. */}
+      {/* Header — only the live count, no fake distribution bars. */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <div className="flex items-center gap-2">
           <span className="text-3xl font-black text-[var(--foreground)]">
@@ -272,7 +272,7 @@ function ReviewsTab({
 
       {/* Real customer reviews */}
       {isLoading && realReviews.length === 0 ? (
-        <div className="text-sm text-[var(--foreground)]/40 py-2">Loading reviewsâ€¦</div>
+        <div className="text-sm text-[var(--foreground)]/40 py-2">Loading reviews…</div>
       ) : realReviews.length > 0 ? (
         <div className="space-y-4">
           {realReviews.map((review) => {
@@ -335,7 +335,7 @@ function ReviewsTab({
         </div>
       )}
 
-      {/* Demo reviews â€” always shown so the tab never looks empty. */}
+      {/* Demo reviews — always shown so the tab never looks empty. */}
       <div className="space-y-4">
         {DEMO_REVIEWS.map((review) => (
           <div
@@ -384,7 +384,7 @@ export default function ProductDetail() {
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="flex items-center gap-3 text-[var(--foreground)]/60">
           <Loader2 className="w-6 h-6 animate-spin" />
-          <span>Loading productâ€¦</span>
+          <span>Loading product…</span>
         </div>
       </div>
     );
@@ -410,7 +410,7 @@ export default function ProductDetail() {
   const handleAddToCart = () =>
     addToCart({
       ...product,
-      // Normalize image to a plain URL â€” backend returns either a URL or
+      // Normalize image to a plain URL — backend returns either a URL or
       // a JSON-stringified `{src, position}` object; the cart sidebar
       // uses this directly as <img src>.
       image: imgSrc(product.image) || undefined,
@@ -461,7 +461,7 @@ export default function ProductDetail() {
               transition={{ duration: 0.6 }}
             >
               <div className="sticky top-24">
-                {/* Main image â€” true 1:1 frame */}
+                {/* Main image — true 1:1 frame */}
                 <div
                   className="relative aspect-square w-full rounded-3xl overflow-hidden bg-[var(--retro-cream)] border border-[var(--foreground)]/8"
                 >
@@ -480,7 +480,7 @@ export default function ProductDetail() {
                   </AnimatePresence>
                 </div>
 
-                {/* Thumbnails â€” only shown when multiple images exist */}
+                {/* Thumbnails — only shown when multiple images exist */}
                 {product.images && product.images.length > 1 && (
                   <div className="mt-4 flex gap-3 justify-center">
                     {product.images.map((img, i) => (
@@ -536,11 +536,11 @@ export default function ProductDetail() {
               {/* Price */}
               <div className="flex items-baseline gap-3 mb-6">
                 <span className="text-4xl font-black text-[var(--accent-brown)]">
-                  â‚¹{product.price.toLocaleString("en-IN")}
+                  ₹{product.price.toLocaleString("en-IN")}
                 </span>
                 {product.originalPrice && (
                   <span className="text-lg text-[var(--foreground)]/40 line-through">
-                    â‚¹{product.originalPrice.toLocaleString("en-IN")}
+                    ₹{product.originalPrice.toLocaleString("en-IN")}
                   </span>
                 )}
               </div>
@@ -562,7 +562,7 @@ export default function ProductDetail() {
                         onClick={handleBuyNow}
                       >
                         <Zap className="w-4 h-4 mr-2" />
-                        Buy Now â€” â‚¹{product.price.toLocaleString("en-IN")}
+                        Buy Now — ₹{product.price.toLocaleString("en-IN")}
                       </Button>
                     </motion.div>
                     <Button
