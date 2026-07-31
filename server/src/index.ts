@@ -130,6 +130,9 @@ async function bootDb() {
             longDescription: p.longDescription ?? null,
             inStock: p.inStock ?? true,
             stock: p.stock ?? 100,
+            // 0 = free delivery (e.g. speaker used to be free at point of sale),
+            // otherwise the per-product flat delivery charge in INR.
+            deliveryCharge: p.deliveryCharge ?? 30,
             // Shipping dimensions — defaults match the schema. Edit per
             // product in the admin panel once it's deployed.
             weightGrams: p.weightGrams ?? 500,
