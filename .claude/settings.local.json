@@ -32,7 +32,10 @@
       "Bash(curl -sS -X POST http://localhost:4000/api/orders/webhook/razorpay -H \"Content-Type: application/json\" -d '{}')",
       "Bash(curl -sS http://localhost:4000/api/nope)",
       "Bash(curl -sS -i -X POST http://localhost:4000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"nonexistent@example.com\",\"password\":\"wrong\"}')",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"Backend /api/health: %{http_code} \\(%{time_total}s\\)\\\\n\" \"https://massive-inventions-api.vercel.app/api/health\" --max-time 15)",
+      "Bash(curl -s \"https://massive-inventions-api.vercel.app/api/products\" --max-time 15)",
+      "Bash(curl -s -X POST https://massive-inventions-api.vercel.app/api/admin/fix-prices -H 'Authorization: Bearer gHGb0TBUu0xORo0SQ_UZCnZWfIkxIvWKZJYVnUGbuRE' -H 'Content-Type: application/json' -d '{\"updates\":[{\"sku\":\"SPK-SHEESHAM-001\",\"price\":1299},{\"sku\":\"EARBUDS-X-001\",\"price\":449},{\"sku\":\"CABLE-USB-C-001\",\"price\":129}]}' -w '\\\\nHTTP: %{http_code}\\\\n')"
     ]
   }
 }

@@ -39,7 +39,7 @@ export type SeedProduct = {
 export const seedProducts: SeedProduct[] = [
   {
     name: "Vintage Sheesham Speaker",
-    price: 1299,
+    price: 999,
     originalPrice: 5999,
     rating: 4.9,
     reviews: 1287,
@@ -59,7 +59,7 @@ export const seedProducts: SeedProduct[] = [
       "The Vintage Sheesham Speaker is a tribute to classic audio craftsmanship. Each enclosure is handcrafted from sustainably sourced Indian Sheesham wood, finished to bring out the natural grain. Premium 40mm drivers deliver rich mids and crisp highs with deep, controlled bass. Bluetooth 5.3 with multipoint pairing, 12-hour battery, USB-C fast charging.",
     inStock: true,
     stock: 50,
-    deliveryCharge: 0,
+    deliveryCharge: 70,
     specs: [
       { label: "Driver", value: "2× 40mm Full Range" },
       { label: "Power", value: "20W RMS" },

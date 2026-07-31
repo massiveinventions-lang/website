@@ -45,7 +45,7 @@ export const products: Product[] = [
   {
     id: 1,
     name: "Vintage Sheesham Speaker",
-    price: 1299,
+    price: 999,
     rating: 4.9,
     reviews: 1847,
     category: "Speakers",
@@ -61,7 +61,7 @@ export const products: Product[] = [
     description: "Hand-turned from premium aged sheesham wood. 10W warm wide soundstage.",
     longDescription: "The Vintage Sheesham Speaker is a statement of craft. Each cabinet is hand-turned by artisans in Jaipur from sustainably sourced premium aged sheesham. The grain is unique on every unit — no two speakers are identical. 10W of warm, wide audio fills the room the way only real wood can.",
     inStock: true,
-    deliveryCharge: 0,
+    deliveryCharge: 70,
     specs: [
       { label: "Speaker Output", value: "10 Watts" },
       { label: "Wood Type", value: "Aged Sheesham (40 Year)" },

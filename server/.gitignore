@@ -17,3 +17,5 @@ prisma/dev.db-journal
 # One-off debug scripts (kept on disk for the developer but never
 # deployed). Use `npm run dev-debug` from server/ to see what's here.
 scripts/dev-debug/
+.vercel
+.env*
