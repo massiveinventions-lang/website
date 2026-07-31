@@ -35,7 +35,9 @@
       "Bash(npm run *)",
       "Bash(curl -s -o /dev/null -w \"Backend /api/health: %{http_code} \\(%{time_total}s\\)\\\\n\" \"https://massive-inventions-api.vercel.app/api/health\" --max-time 15)",
       "Bash(curl -s \"https://massive-inventions-api.vercel.app/api/products\" --max-time 15)",
-      "Bash(curl -s -X POST https://massive-inventions-api.vercel.app/api/admin/fix-prices -H 'Authorization: Bearer gHGb0TBUu0xORo0SQ_UZCnZWfIkxIvWKZJYVnUGbuRE' -H 'Content-Type: application/json' -d '{\"updates\":[{\"sku\":\"SPK-SHEESHAM-001\",\"price\":1299},{\"sku\":\"EARBUDS-X-001\",\"price\":449},{\"sku\":\"CABLE-USB-C-001\",\"price\":129}]}' -w '\\\\nHTTP: %{http_code}\\\\n')"
+      "Bash(curl -s -X POST https://massive-inventions-api.vercel.app/api/admin/fix-prices -H 'Authorization: Bearer gHGb0TBUu0xORo0SQ_UZCnZWfIkxIvWKZJYVnUGbuRE' -H 'Content-Type: application/json' -d '{\"updates\":[{\"sku\":\"SPK-SHEESHAM-001\",\"price\":1299},{\"sku\":\"EARBUDS-X-001\",\"price\":449},{\"sku\":\"CABLE-USB-C-001\",\"price\":129}]}' -w '\\\\nHTTP: %{http_code}\\\\n')",
+      "Bash(curl -sS \"https://massive-inventions-api.vercel.app/api/products\")",
+      "Bash(python -c \"import sys, json; data = json.load\\(sys.stdin\\); spk = next\\(p for p in data['products'] if p['name'] == 'Vintage Sheesham Speaker'\\); print\\('LIVE speaker row from API:'\\); print\\('  price: ' + str\\(spk['price']\\)\\); print\\('  deliveryCharge: ' + str\\(spk['deliveryCharge']\\)\\); print\\('  sku: ' + spk['sku']\\)\")"
     ]
   }
 }
