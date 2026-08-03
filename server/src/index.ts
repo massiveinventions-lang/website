@@ -108,50 +108,53 @@ async function bootDb() {
   try {
     await resolveDatabaseUrl();
     await connectDB();
-    // Auto-seed products if the table is empty
+    // Always upsert seed rows that carry an SKU. Seeded rows are the only
+    // ones with skus, so this refreshes catalog fields (price, delivery,
+    // description, etc.) on every deploy without touching products added
+    // through the admin panel. Rows without a sku are skipped — they
+    // were inserted by the admin and have no canonical source here.
     if (isDbReady()) {
-      const count = await prisma.product.count();
-      if (count === 0 || process.env.FORCE_SEED === "true") {
-        const { seedProducts } = await import("../prisma/products-data");
-        for (const p of seedProducts) {
-          const data = {
-            id: require("crypto").randomUUID(),
-            name: p.name,
-            price: p.price,
-            originalPrice: p.originalPrice ?? null,
-            rating: p.rating ?? 0,
-            reviews: p.reviews ?? 0,
-            category: p.category,
-            badge: p.badge ?? null,
-            image: JSON.stringify(p.image),
-            hoverImage: p.hoverImage ? JSON.stringify(p.hoverImage) : null,
-            images: p.images ? JSON.stringify(p.images) : null,
-            description: p.description,
-            longDescription: p.longDescription ?? null,
-            inStock: p.inStock ?? true,
-            stock: p.stock ?? 100,
-            // 0 = free delivery (e.g. speaker used to be free at point of sale),
-            // otherwise the per-product flat delivery charge in INR.
-            deliveryCharge: p.deliveryCharge ?? 30,
-            // Shipping dimensions — defaults match the schema. Edit per
-            // product in the admin panel once it's deployed.
-            weightGrams: p.weightGrams ?? 500,
-            lengthCm: p.lengthCm ?? 20,
-            breadthCm: p.breadthCm ?? 15,
-            heightCm: p.heightCm ?? 15,
-            specs: JSON.stringify(p.specs ?? []),
-            features: JSON.stringify(p.features ?? []),
-            colors: JSON.stringify(p.colors ?? []),
-            sku: p.sku ?? null,
-          };
-          if (p.sku) {
-            await prisma.product.upsert({ where: { sku: p.sku }, update: data, create: data });
-          } else {
-            await prisma.product.create({ data });
-          }
+      const { seedProducts } = await import("../prisma/products-data");
+      let upserted = 0;
+      let skipped = 0;
+      for (const p of seedProducts) {
+        if (!p.sku) {
+          skipped++;
+          continue;
         }
-        console.log(`[boot] seeded ${seedProducts.length} products`);
+        const data = {
+          name: p.name,
+          price: p.price,
+          originalPrice: p.originalPrice ?? null,
+          rating: p.rating ?? 0,
+          reviews: p.reviews ?? 0,
+          category: p.category,
+          badge: p.badge ?? null,
+          image: JSON.stringify(p.image),
+          hoverImage: p.hoverImage ? JSON.stringify(p.hoverImage) : null,
+          images: p.images ? JSON.stringify(p.images) : null,
+          description: p.description,
+          longDescription: p.longDescription ?? null,
+          inStock: p.inStock ?? true,
+          stock: p.stock ?? 100,
+          // 0 = free delivery (e.g. speaker used to be free at point of sale),
+          // otherwise the per-product flat delivery charge in INR.
+          deliveryCharge: p.deliveryCharge ?? 30,
+          // Shipping dimensions — defaults match the schema. Edit per
+          // product in the admin panel once it's deployed.
+          weightGrams: p.weightGrams ?? 500,
+          lengthCm: p.lengthCm ?? 20,
+          breadthCm: p.breadthCm ?? 15,
+          heightCm: p.heightCm ?? 15,
+          specs: JSON.stringify(p.specs ?? []),
+          features: JSON.stringify(p.features ?? []),
+          colors: JSON.stringify(p.colors ?? []),
+          sku: p.sku,
+        };
+        await prisma.product.upsert({ where: { sku: p.sku }, update: data, create: data });
+        upserted++;
       }
+      console.log(`[boot] upserted ${upserted} seed products (skipped ${skipped} without sku)`);
     }
   } catch (err) {
     console.error("[boot] seed failed:", err);
