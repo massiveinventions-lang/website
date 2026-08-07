@@ -52,6 +52,10 @@ export const seedProducts: SeedProduct[] = [
       { src: "/speaker-2.png", position: "center" },
       { src: "/speaker-3.png", position: "center" },
       { src: "/speaker-4.png", position: "center" },
+      { src: "/image 11.jpeg", position: "center" },
+      { src: "/image 22.jpeg", position: "center" },
+      { src: "/image 33.jpeg", position: "center" },
+      { src: "/image 44.jpeg", position: "center" },
     ],
     description:
       "Handcrafted from sustainable Sheesham wood with rich, warm acoustics and 12-hour battery life.",
